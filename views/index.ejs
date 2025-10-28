@@ -1,19 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <h1><%= message %></h1>
-    <button onclick="checkIn()">I'm OK 👍</button>
+<%- include('partials/htmlheader.ejs') %>
+<body>
+  <main class="container">
+    <h1>Welcome</h1>
 
-    <script>
-      function checkIn() {
-        alert("Check-in successful!");
-      }
-    </script>
-  </body>
-</html>
+    <div class="button-row">
+      <!-- Check-in section -->
+      <div class="checkin-section">
+        <h2>Check-In</h2>
+        <form action="/checkin" method="POST">
+          <button type="submit" class="checkin-btn">I'm OK</button>
+        </form>
+      </div>
+
+      <!-- Virtual Meeting section -->
+      <div class="meeting-section">
+        <h2>Virtual Meeting</h2>
+        <div class="meeting-buttons">
+          <a href="/arrange" class="meeting-btn">Arrange</a>
+          <a href="/join" class="meeting-btn">Join</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-bar">
+    <button class="emergency-btn">Emergency</button>
+    <button class="settings-btn">Settings</button>
+  </nav>
+</body>
+<%- include('partials/htmlfooter.ejs') %>

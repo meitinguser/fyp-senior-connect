@@ -1,0 +1,23 @@
+<%- include('partials/htmlheader.ejs') %>
+<body>
+<main class="container">
+    <h1>Arrange a Meeting</h1>
+    <form>
+    <label>Choose Contact:</label>
+    <select>
+        <option>Caregiver 1</option>
+        <option>AIC Rep 1</option>
+        <option>May Tan</option>
+    </select>
+
+    <label>Time:</label>
+    <input type="datetime-local" />
+
+    <button type="submit" class="confirm-btn">Set Up Meeting</button>
+    </form>
+
+    <a href="/" class="back-btn">Back</a>
+</main>
+</body>
+
+<%- include('partials/htmlfooter.ejs') %>
