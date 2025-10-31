@@ -1,15 +1,13 @@
 <%- include('partials/htmlheader.ejs') %>
 <body>
   <main class="container">
-    <h1>Welcome</h1>
+    <h1 id="seniorName">John Tan</h1>
 
     <div class="button-row">
       <!-- Check-in section -->
       <div class="checkin-section">
         <h2>Check-In</h2>
-        <form action="/checkin" method="POST">
-          <button type="submit" class="checkin-btn">I'm OK</button>
-        </form>
+        <button id="checkInBtn" class="checkin-btn">I'm OK</button>
       </div>
 
       <!-- Virtual Meeting section -->
@@ -26,7 +24,20 @@
   <!-- Bottom Navigation Bar -->
   <nav class="bottom-bar">
     <button class="emergency-btn">Emergency</button>
-    <button class="settings-btn">Settings</button>
+    <button class="settings-btn" onclick="openCaregiver()">Settings</button>
   </nav>
+
+  <!-- Settings (Access Code) Form -->
+<div class="form-popup" id="settingsForm">
+  <form action="/caregiver-login" class="form-container" method="POST">
+    <h2>Caregiver Access</h2>
+
+    <input type="password" placeholder="Enter Assess Code" name="code" required>
+
+    <button type="submit" class="btn">Unlock</button>
+    <button type="button" class="btn cancel" onclick="closeCaregiver()">Close</button>
+  </form>
+</div>
+
 </body>
 <%- include('partials/htmlfooter.ejs') %>

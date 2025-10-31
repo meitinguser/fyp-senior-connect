@@ -1,6 +1,10 @@
 /* ====== GOOGLE FONTS ====== */
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Poppins:wght@500;700&display=swap");
 
+
+/* ====== NOTES ====== */
+/* margin goes top, right, bottom, left */
+
 /* ====== GENERAL LAYOUT ====== */
 body {
   font-family: "Nunito Sans", Arial, sans-serif;
@@ -149,29 +153,6 @@ h2 {
   font-weight: 600;
 }
 
-/* ====== NAV BUTTONS ====== */
-.emergency-btn {
-  background: linear-gradient(145deg, #e53935, #a11e1e);
-  color: white;
-  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
-}
-
-.emergency-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(229, 57, 53, 0.45);
-}
-
-.settings-btn {
-  background: linear-gradient(145deg, #558b2f, #33691e);
-  color: white;
-  box-shadow: 0 4px 10px rgba(85, 139, 47, 0.4);
-}
-
-.settings-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(85, 139, 47, 0.45);
-}
-
 /* ====== RESPONSIVE DESIGN ====== */
 @media (max-width: 768px) {
   .button-row {
@@ -230,4 +211,77 @@ h2 {
 .back-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(84, 110, 122, 0.4);
+}
+
+
+/* ====== NAV BUTTONS ====== */
+.emergency-btn {
+  background: linear-gradient(145deg, #e53935, #a11e1e);
+  color: white;
+  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
+}
+
+.emergency-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(229, 57, 53, 0.45);
+}
+
+.settings-btn {
+  background: linear-gradient(145deg, #558b2f, #33691e);
+  color: white;
+  box-shadow: 0 4px 10px rgba(85, 139, 47, 0.4);
+}
+
+.settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(85, 139, 47, 0.45);
+}
+
+/* ====== Settings Button (Pop-Up) ====== */
+.form-popup {
+  display: none;
+  position: fixed;
+  bottom: 80px; /* just above the bottom bar */
+  right: 20px;
+  border: 3px solid #2e7d32;
+  z-index: 9;
+  background-color: #f9fff9;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  width: 300px;
+}
+
+.form-container h2 {
+  margin-bottom: 10px;
+  color: #2e7d32;
+}
+
+.form-container input[type=password] {
+  width:91%; /* this number perfectly fits */
+  padding: 12px;
+  margin: 8px 0px 20px 0; 
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #f1f1f1;
+}
+
+.form-container .btn {
+  background: linear-gradient(145deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.form-container .btn:hover {
+  opacity: 0.9;
+}
+
+.form-container .cancel {
+  background: #e53935;
 }
