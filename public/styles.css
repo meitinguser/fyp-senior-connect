@@ -240,7 +240,7 @@ h2 {
 /* ====== Settings Button (Pop-Up) ====== */
 .form-popup {
   display: none;
-  position: fixed;
+  position: absolute;
   bottom: 80px; /* just above the bottom bar */
   right: 20px;
   border: 3px solid #2e7d32;
@@ -284,4 +284,13 @@ h2 {
 
 .form-container .cancel {
   background: #e53935;
+}
+
+#newName {
+  width:91%; /* this number perfectly fits */
+  padding: 12px;
+  margin: 8px 0px 20px 0; 
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #f1f1f1;
 }

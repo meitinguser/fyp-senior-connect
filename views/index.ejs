@@ -27,17 +27,49 @@
     <button class="settings-btn" onclick="openCaregiver()">Settings</button>
   </nav>
 
-  <!-- Settings (Access Code) Form -->
-<div class="form-popup" id="settingsForm">
-  <form action="/caregiver-login" class="form-container" method="POST">
-    <h2>Caregiver Access</h2>
+  <!-- Settings Popup -->
+  <div class="form-popup" id="settingsForm">
+    <div class="form-container">
+      <h2>Settings</h2>
 
-    <input type="password" placeholder="Enter Assess Code" name="code" required>
+      <!-- Change Name Section -->
+      <label for="newName"><b>Change Name</b></label>
+      <input type="text" id="newName" placeholder="Enter your name">
+      <button type="button" class="btn" onclick="changeName()">Save Name</button>
+      <hr>
 
-    <button type="submit" class="btn">Unlock</button>
-    <button type="button" class="btn cancel" onclick="closeCaregiver()">Close</button>
-  </form>
-</div>
+      <!-- Caregiver Access -->
+      <h3>Caregiver Access</h3>
+      <form action="/caregiver-login" method="POST">
+        <input type="password" placeholder="Enter Access Code" name="code" required>
+        <button type="submit" class="btn">Unlock</button>
+      </form>
 
+      <button type="button" class="btn cancel" onclick="closeCaregiver()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Load stored name (localStorage) on page load 
+    document.addEventListener("DOMContentLoaded", () => {
+      const storedName = localStorage.getItem("seniorName");
+      if (storedName) {
+        document.getElementById("seniorName").innerText = storedName;
+      }
+    });
+
+    // Change name function 
+    function changeName() {
+      const newName = document.getElementById("newName").value.trim();
+      if (!newName) {
+        alert("Please enter a name first!");
+        return;
+      }
+      document.getElementById("seniorName").innerText = newName;
+      localStorage.setItem("seniorName", newName);
+      alert("Name updated to " + newName);
+      document.getElementById("newName").value = "";
+    }
+  </script>
 </body>
 <%- include('partials/htmlfooter.ejs') %>
