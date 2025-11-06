@@ -1,296 +1,99 @@
-/* ====== GOOGLE FONTS ====== */
-@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Poppins:wght@500;700&display=swap");
 
-
-/* ====== NOTES ====== */
-/* margin goes top, right, bottom, left */
-
-/* ====== GENERAL LAYOUT ====== */
 body {
-  font-family: "Nunito Sans", Arial, sans-serif;
-  background: linear-gradient(180deg, #e6f7e6 0%, #d5f0d5 100%);
   margin: 0;
-  padding: 0;
-  text-align: center;
-  color: #2f3e46;
-}
-
-/* ====== CONTAINER STRUCTURE ====== */
-.container {
-  padding: 2rem;
-  max-width: 900px;
-  margin: 0 auto;
-  min-height: calc(100vh - 120px);
+  font-family: "Segoe UI", sans-serif;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
+  text-align: center;
+  padding: 1rem;
+  user-select: none;
+  touch-action: none;
+  transition: background 1s;
 }
 
 h1 {
-  font-family: "Poppins", sans-serif;
-  color: #1b4332;
-  font-size: 2.2rem;
-  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  font-size: 1.4rem;
+  color: #333;
 }
 
-h2 {
-  font-family: "Poppins", sans-serif;
-  color: #2e7d32;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-
-/* ====== BUTTON ROW (SIDE BY SIDE) ====== */
-.button-row {
-  display: flex;
-  justify-content: center; /* centers both sections */
-  align-items: stretch; /* make them same height */
-  gap: 2rem; /* spacing between sections */
-  flex-wrap: nowrap; /* keep them side by side */
-  width: 100%;
-  max-width: 900px;
-}
-
-/* Both boxes take equal space */
-.checkin-section,
-.meeting-section {
-  flex: 1; /* equal width */
-  background-color: #f7fff7;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+#gameArea {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly;
   align-items: center;
+  width: 100%;
+  max-width: 500px;
 }
 
-/* Arrange + Join side-by-side */
-.meeting-buttons {
+.baskets {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.basket {
+  width: 90px;
+  height: 90px;
+  background: linear-gradient(to top, #fffbe6, #ffe0b2);
+  border-radius: 25px;
+  border: 3px solid #f6c67a;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap; /* keep in one line */
-  width: 100%;
-}
-
-.meeting-btn {
-  flex: 1;
-  text-align: center;
-}
-
-
-/* ====== CHECK-IN BUTTON ====== */
-.checkin-btn {
-  background: linear-gradient(145deg, #4caf50, #45a049);
-  color: #fff;
   font-size: 2rem;
-  font-weight: 700;
-  border: none;
+  box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s, background 0.5s, color 0.5s;
+}
+
+.basket.active {
+  transform: scale(1.1);
+  border-color: #27ae60;
+  box-shadow: 0 8px 15px rgba(39, 174, 96, 0.5);
+}
+
+.basket span { 
+  opacity: 0.3; 
+  transition: opacity 0.3s;
+}
+
+.basket.filled span {
+  opacity: 1;
+}
+
+#tray {
+  width: 90%;
+  background: #fffbe6;
   border-radius: 20px;
-  padding: 2rem;
-  width: 100%;
-  cursor: pointer;
-  box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.checkin-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(76, 175, 80, 0.35);
-}
-
-/* ====== MEETING BUTTONS ====== */
-.meeting-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.meeting-btn {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem 2rem;
-  background: linear-gradient(145deg, #007bff, #005ec2);
-  color: white;
-  border-radius: 14px;
-  text-decoration: none;
-  font-size: 1.2rem;
-  font-weight: 600;
-  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.meeting-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 123, 255, 0.35);
-}
-
-/* ====== BOTTOM NAV BAR ====== */
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background-color: #28842d;
+  border: 2px solid #f6c67a;
+  padding: 1rem;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 1rem 0;
-  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.2);
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.bottom-bar button {
-  font-size: 1.1rem;
-  padding: 1rem 2rem;
-  border: solid;
-  border-color: #1f3f1f;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 600;
+.item {
+  font-size: 2.5rem;
+  margin: 0.5rem;
+  cursor: grab;
+  transition: transform 0.2s;
+  touch-action: none;
 }
 
-/* ====== RESPONSIVE DESIGN ====== */
-@media (max-width: 768px) {
-  .button-row {
-    flex-direction: column;
-  }
-
-  .checkin-section,
-  .meeting-section {
-    width: 100%;
-  }
-
-  .checkin-btn {
-    font-size: 1.6rem;
-    padding: 1.5rem;
-  }
-
-  .meeting-btn {
-    width: 100%;
-  }
+.item:active {
+  transform: scale(1.2);
 }
 
-/* ====== MEETING ACTION BUTTONS ====== */
-.confirm-btn,
-.back-btn {
-  display: inline-block;
-  margin: 1rem 0.5rem;
-  padding: 1rem 2rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-/* Confirm Button */
-.confirm-btn {
-  background: linear-gradient(145deg, #4caf50, #388e3c);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
-}
-
-.confirm-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(76, 175, 80, 0.4);
-}
-
-/* Back Button */
-.back-btn {
-  background: linear-gradient(145deg, #78909c, #546e7a);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(84, 110, 122, 0.3);
-}
-
-.back-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(84, 110, 122, 0.4);
-}
-
-
-/* ====== NAV BUTTONS ====== */
-.emergency-btn {
-  background: linear-gradient(145deg, #e53935, #a11e1e);
-  color: white;
-  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
-}
-
-.emergency-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(229, 57, 53, 0.45);
-}
-
-.settings-btn {
-  background: linear-gradient(145deg, #558b2f, #33691e);
-  color: white;
-  box-shadow: 0 4px 10px rgba(85, 139, 47, 0.4);
-}
-
-.settings-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(85, 139, 47, 0.45);
-}
-
-/* ====== Settings Button (Pop-Up) ====== */
-.form-popup {
-  display: none;
-  position: absolute;
-  bottom: 80px; /* just above the bottom bar */
-  right: 20px;
-  border: 3px solid #2e7d32;
-  z-index: 9;
-  background-color: #f9fff9;
-  padding: 20px;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  width: 300px;
-}
-
-.form-container h2 {
-  margin-bottom: 10px;
-  color: #2e7d32;
-}
-
-.form-container input[type=password] {
-  width:91%; /* this number perfectly fits */
-  padding: 12px;
-  margin: 8px 0px 20px 0; 
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background: #f1f1f1;
-}
-
-.form-container .btn {
-  background: linear-gradient(145deg, #4caf50, #45a049);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-
-.form-container .btn:hover {
-  opacity: 0.9;
-}
-
-.form-container .cancel {
-  background: #e53935;
-}
-
-#newName {
-  width:91%; /* this number perfectly fits */
-  padding: 12px;
-  margin: 8px 0px 20px 0; 
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background: #f1f1f1;
+#message {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-top: 1rem;
+  color: #444;
 }
