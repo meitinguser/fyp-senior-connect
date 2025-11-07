@@ -2,152 +2,259 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Emoji Check-In</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Senior Connect - Daily Emoji Check-In</title>
   <link rel="stylesheet" href="/styles.css" />
-  <script src="/script.js"></script>
 </head>
 
 <body>
-  <h1 id="headerText">Good Day! Drag the emojis to their matching spots 🌞</h1>
-  <div id="gameArea">
-    <div class="baskets" id="baskets"></div>
-    <div id="tray"></div>
-    <div id="message"></div>
+  <div id="headerText"></div> <!-- Top text, changes based on the time of day-->
+
+  <div id="gameArea"> <!--The div that stores the items and the baskets -->
+
+    <div id="tray" role="list"></div> <!-- the tray, can be reordered by swapping with the baskets -->
+    <div class="baskets" id="baskets"></div> <!-- the baskets, can be reordered by swapping with the tray -->
+    <div id="message" aria-live="polite"></div> <!-- message that appears after check-in completion -->
+
   </div>
 
   <script>
-    const allEmojis = [
-      "☀️", "🌸", "🍎", "🌈", "🐢", "🕊️", "🌻", "🐱", "🍋", "🍉",
-      "🐕", "🌹", "🌙", "🐇", "🌾", "🍇", "🌼", "🍊", "🐠", "🦋",
-      "🍀", "🌺", "🐦", "🦜", "🌴", "🍒", "🌷", "🍄", "🪴"
-    ];
+    // all the available emojis, the general theme is nice things, animals and food
+    const allEmojis = ["☀️", "🌸", "🍎", "🌈", "🐢", "🕊️", "🌻", "🐱", "🍋", "🍉", "🐕", "🌹", "🌙", "🐇", "🌾", "🍇", "🌼", "🍊", "🐠", "🦋", "🍀", "🌺", "🐦", "🦜", "🌴", "🍒", "🌷", "🍄", "🪴"];
 
-    // === Time-based background & greeting ===
-    function setTimeBasedBackground() {
-      const hour = new Date().getHours();
-      let bg = '';
-      let greeting = '';
-      let textcol = '#333';
-      let isNight = false;
-
-      if (hour >= 6 && hour < 12) {
-        bg = 'linear-gradient(to top, #fdebd0, #f6ddcc, #fad7a0)';
-        greeting = "Good Morning!";
-      } else if (hour >= 12 && hour < 18) {
-        bg = 'linear-gradient(to top, #ffd89b, #ffb347)';
-        greeting = "Good Afternoon!";
-      } else if (hour >= 18 && hour < 20) {
-        bg = 'linear-gradient(to top, #f6a98f, #f28e63)';
-        greeting = "Good Evening!";
-      } else {
-        bg = 'linear-gradient(to top, #2c3e50, #34495e)';
-        greeting = "Good Night!";
-        textcol = 'white';
-        isNight = true;
-      }
-
-      document.body.style.background = bg;
-      const header = document.getElementById("headerText");
-      header.textContent = greeting + " Drag the emojis to their matching spots";
-      header.style.color = textcol;
-
-      // Adjust basket colors for night mode
-      document.querySelectorAll('.basket').forEach(basket => {
-        if (isNight) {
-          basket.style.background = 'linear-gradient(to top, #4b5c6b, #2c3e50)';
-          basket.style.borderColor = '#fff';
-          basket.style.color = '#fff';
-        } else {
-          basket.style.background = 'linear-gradient(to top, #fffbe6, #ffe0b2)';
-          basket.style.borderColor = '#f6c67a';
-          basket.style.color = '#333';
-        }
-      });
-    }
-
-    // === Daily emoji swapping using seeds ===
+    // use math to come up with a seed - current year * 10000 + (current month + 1) * 100 + current date
+    // ex: 29-10-2025 = 2025 * 10000 + (10 + 1) * 100 + 29
+    // 20251129
     function getDailySeed() {
-      const today = new Date();
-      return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      const t = new Date();
+      return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+      console.log(t.getDate())
     }
-
+    // uses Math library, makes a random-looking number based on a given seed, which will be a number between 0 and 1
+    // if you don't have this the emojis and everything don't load
     function seededRandom(seed) {
       const x = Math.sin(seed) * 10000;
       return x - Math.floor(x);
     }
 
+    // get emoji function, runs 3 times for 3 emojis
     function getDailyEmojis(count = 3) {
+      // copy emoji list
       const copy = [...allEmojis];
+      // make a empty list to store emojis
       const chosen = [];
+      // call generate seed command
       const seed = getDailySeed();
+      // let i = 0, count up to 3, and for each number, get emoji
       for (let i = 0; i < count; i++) {
-        const index = Math.floor(seededRandom(seed + i) * copy.length);
-        chosen.push(copy[index]);
-        copy.splice(index, 1);
+        const idx = Math.floor(seededRandom(seed + i) * copy.length);
+        chosen.push(copy[idx]);
+        copy.splice(idx, 1);
       }
+      // return the list of emojis
       return chosen;
     }
+    // Shuffle the list (random, more engaging)
+    function shuffleArray(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-    const dailyEmojis = getDailyEmojis();
-    const baskets = document.getElementById("baskets");
-    const tray = document.getElementById("tray");
-    const message = document.getElementById("message");
-
-    // create baskets with faint hints and tray items
-    dailyEmojis.forEach(emoji => {
-      const basket = document.createElement("div");
-      basket.classList.add("basket");
-      basket.dataset.item = emoji;
-      basket.innerHTML = `<span>${emoji}</span>`;
-      baskets.appendChild(basket);
-
-      const item = document.createElement("div");
-      item.classList.add("item");
-      item.textContent = emoji;
-      item.draggable = true;
-      item.dataset.item = emoji;
-      tray.appendChild(item);
-    });
-
-    setTimeBasedBackground(); // apply initial background
-
-    let matched = 0;
-
-    document.querySelectorAll(".item").forEach(item => {
-      item.addEventListener("dragstart", e => {
-        e.dataTransfer.setData("text", e.target.dataset.item);
-      });
-    });
-
-    document.querySelectorAll(".basket").forEach(basket => {
-      basket.addEventListener("dragover", e => e.preventDefault());
-      basket.addEventListener("dragenter", e => basket.classList.add('active'));
-      basket.addEventListener("dragleave", e => basket.classList.remove('active'));
-      basket.addEventListener("drop", e => {
-        e.preventDefault();
-        basket.classList.remove('active');
-        const draggedItem = e.dataTransfer.getData("text");
-        if (draggedItem === basket.dataset.item && !basket.classList.contains("filled")) {
-          basket.classList.add("filled");
-          basket.innerHTML = `<span>${draggedItem}</span>`;
-          document.querySelector(`.item[data-item='${draggedItem}']`).remove();
-          matched++;
-          if (matched === dailyEmojis.length) {
-            message.textContent = "All matched! Checking in automatically… ✅";
-            // Auto check-in call here
-            setTimeout(() => {
-              alert("You've checked in successfully! 💛");
-              message.textContent = "Done! 👍";
-
-            }, 500);
-          }
+    // Change background and text colour based on time of day
+    function setTimeBasedBackground() {
+      // get hour (ex: 23)
+      const hour = new Date().getHours();
+      let bg, greeting, textcol = '#333', isNight = false;
+      if (hour >= 6 && hour < 12) { bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)'; greeting = 'Good Morning!'; }
+      else if (hour >= 12 && hour < 18) { bg = 'linear-gradient(to top,#ffd89b,#ffb347)'; greeting = 'Good Afternoon!'; }
+      else if (hour >= 18 && hour < 20) { bg = 'linear-gradient(to top,#f6a98f,#f28e63)'; greeting = 'Good Evening!'; }
+      else { bg = 'linear-gradient(to top,#2c3e50,#34495e)'; greeting = 'Good Night!'; textcol = 'white'; isNight = true; }
+      document.body.style.background = bg;
+      document.getElementById('headerText').textContent = `${greeting} Drag the emojis to their matching spots`;
+      document.getElementById('headerText').style.color = textcol;
+      // Change basket colours when it's night
+      document.querySelectorAll('.basket').forEach(b => {
+        if (isNight) {
+          b.style.background = 'linear-gradient(to top,#4b5c6b,#2c3e50)';
+          b.style.borderColor = '#fff';
+          b.style.color = '#fff';
         } else {
-          message.textContent = "Not quite right, try again 🙏";
+          b.style.background = 'linear-gradient(to top,#fffbe6,#ffe0b2)';
+          b.style.borderColor = '#f6c67a';
+          b.style.color = '#333';
         }
       });
+    }
+
+    // select elements on screen (baskets, tray, message)
+    const basketsEl = document.getElementById('baskets');
+    const trayEl = document.getElementById('tray');
+    const messageEl = document.getElementById('message');
+
+    // call the dailyemoji function, send these to the tray, shuffle them
+    const dailyEmojis = getDailyEmojis(3);
+    const trayEmojis = shuffleArray([...dailyEmojis]);
+
+    // for each emoji, make a div for a basket
+    dailyEmojis.forEach(e => {
+      const b = document.createElement('div');
+      b.className = 'basket';
+      b.dataset.item = e;
+      b.innerHTML = `<span class="hint">${e}</span>`;
+      basketsEl.appendChild(b);
     });
+
+    // makes 1 div per emoji in the tray
+    trayEmojis.forEach(e => {
+      const it = document.createElement('div'); // make box
+      it.className = 'item'; // assign classname 'item'
+      it.textContent = e; // write the emoji into it as text
+      it.dataset.item = e; // stores the emoji's value in data-item
+      trayEl.appendChild(it); // add to the tray area
+    });
+
+    setTimeBasedBackground();
+
+    // define matched variable, and set the number of needed tiles matched to check in at 2
+    let matched = 0;
+    const totalNeeded = 2;
+    let activeClone = null;
+    let activeSource = null;
+    let selectedForTap = null;
+
+    function basketAtPoint(x, y) {
+      const el = document.elementFromPoint(x, y);
+      if (!el) return null;
+      return el.closest('.basket');
+    }
+
+    function createClone(text, x, y) {
+      const c = document.createElement('div');
+      c.className = 'item dragging';
+      c.style.position = 'fixed';
+      c.style.left = (x - 36) + 'px';
+      c.style.top = (y - 36) + 'px';
+      c.style.zIndex = 9999;
+      c.style.pointerEvents = 'none';
+      c.textContent = text;
+      document.body.appendChild(c);
+      return c;
+    }
+
+    function destroyClone() {
+      if (activeClone) { activeClone.remove(); activeClone = null; }
+      if (activeSource) activeSource.classList.remove('dragging');
+      activeSource = null;
+    }
+
+    function placeInBasket(basket, emoji) {
+      basket.classList.add('filled');
+      basket.innerHTML = `<span>${emoji}</span>`;
+      const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
+      if (src) src.remove();
+      matched++;
+      messageEl.textContent = matched === totalNeeded ? 'Checking in... ' : '';
+      if (matched === totalNeeded) {
+        setTimeout(() => {
+          fetch("/checkin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Elderly User", status: "checked in" })
+          })
+            .then(r => r.json())
+            .then(result => { messageEl.textContent = "Check-in recorded successfully! 💛"; console.log(result); })
+            .catch(err => { messageEl.textContent = "Couldn't connect. Try again later 🙏"; console.error(err); });
+        }, 400);
+      }
+    }
+
+    // Mouse drag for desktop
+    let mouseMoveHandler = null, mouseUpHandler = null;
+    function onItemMouseDown(e) {
+      e.preventDefault();
+      const item = e.currentTarget;
+      const emoji = item.dataset.item;
+      activeSource = item;
+      activeSource.classList.add('dragging');
+      activeClone = createClone(emoji, e.clientX, e.clientY);
+      mouseMoveHandler = function (ev) { activeClone.style.left = (ev.clientX - 36) + 'px'; activeClone.style.top = (ev.clientY - 36) + 'px'; };
+      mouseUpHandler = function (ev) {
+        const basket = basketAtPoint(ev.clientX, ev.clientY);
+        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji);
+        else messageEl.textContent = "Not quite right, try again 🙏";
+        destroyClone();
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+      };
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+    }
+
+    // Touch drag for mobile
+    let touchMoveHandler = null, touchEndHandler = null;
+    function onItemTouchStart(e) {
+      if (e.touches.length > 1) return;
+      e.preventDefault();
+      const item = e.currentTarget;
+      const emoji = item.dataset.item;
+      activeSource = item;
+      activeSource.classList.add('dragging');
+      const t = e.touches[0];
+      activeClone = createClone(emoji, t.clientX, t.clientY);
+      touchMoveHandler = function (ev) {
+        if (ev.touches.length === 0) return;
+        const tt = ev.touches[0];
+        activeClone.style.left = (tt.clientX - 36) + 'px';
+        activeClone.style.top = (tt.clientY - 36) + 'px';
+      };
+      touchEndHandler = function (ev) {
+        const changed = ev.changedTouches && ev.changedTouches[0];
+        const cx = changed ? changed.clientX : window.innerWidth / 2;
+        const cy = changed ? changed.clientY : window.innerHeight / 2;
+        const basket = basketAtPoint(cx, cy);
+        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji);
+        else messageEl.textContent = "Not quite right, try again 🙏";
+        destroyClone();
+        document.removeEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.removeEventListener('touchend', touchEndHandler);
+      };
+      document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+      document.addEventListener('touchend', touchEndHandler);
+    }
+
+    // Tap-to-select fallback
+    function onItemTap(e) {
+      const it = e.currentTarget;
+      if (selectedForTap === it) { it.classList.remove('selected'); selectedForTap = null; messageEl.textContent = ''; return; }
+      if (selectedForTap) selectedForTap.classList.remove('selected');
+      selectedForTap = it;
+      it.classList.add('selected');
+      messageEl.textContent = `Selected ${it.dataset.item}. Tap a basket to place.`;
+    }
+    function onBasketTap(e) {
+      const b = e.currentTarget;
+      if (!selectedForTap) { messageEl.textContent = 'Tap an item from the tray, then tap the matching basket.'; return; }
+      const emoji = selectedForTap.dataset.item;
+      if (b.dataset.item === emoji && !b.classList.contains('filled')) placeInBasket(b, emoji);
+      else { messageEl.textContent = "Not quite right, try again 🙏"; selectedForTap.classList.remove('selected'); selectedForTap = null; }
+    }
+
+    // Attach handlers
+    document.querySelectorAll('.item').forEach(it => {
+      it.addEventListener('mousedown', onItemMouseDown);
+      it.addEventListener('touchstart', onItemTouchStart, { passive: false });
+      it.addEventListener('click', onItemTap);
+    });
+    document.querySelectorAll('.basket').forEach(b => {
+      b.addEventListener('mouseenter', () => b.classList.add('active'));
+      b.addEventListener('mouseleave', () => b.classList.remove('active'));
+      b.addEventListener('click', onBasketTap);
+    });
+
   </script>
 </body>
 
