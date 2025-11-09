@@ -19,14 +19,16 @@
 
   </div>
 
-    <!-- Dropdown for changing the language -->
-    <label for="languageSelect">Translate to: </label>
+  <!-- Dropdown for changing the language -->
+  <div class="language-selector-container">
+    <label for="languageSelect">Select Language:</label>
     <select id="languageSelect" onchange="handleLanguageChange(this.value)"> <!-- get the value (lang code) of chosen language--> 
         <option value="en" selected>English</option>
-        
         <option value="zh">Chinese (Mandarin)</option>
         <option value="ms">Malay</option>
         <option value="ta">Tamil</option>
+    </select>
+  </div>
 
   <script>
     // Map Database for holding content to translate
