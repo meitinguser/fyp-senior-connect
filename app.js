@@ -12,6 +12,50 @@ app.use(express.urlencoded({ extended: true }));
 // Web App URL (For connecting to Google Web App )
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx-yLPCPqEGCpz5HkM3DDbTbK61E8cdTCir10eB9EGDCCpz9wVMnx4gPk96K5XYYXiTdA/exec';
 
+// Library automatically finds the key based on the environment variable
+// Initialize Google Cloud Translation Client
+const { Translate } = require('@google-cloud/translate').v2;
+
+// Client uses GOOGLE_APPLICATION_CREDENTIALS environment variable
+const translateClient = new Translate();
+// no file path is passed here as the environment variable does the work. 
+
+app.post('/api/translate', async (req, res) => {
+  // Destructure the array of strings and target language code from the client's request body
+  const { texts, targetLang } = req.body;
+
+  // Input validation 
+  if (!texts || !targetLang || !Array.isArray(texts) || texts.length === 0) {
+    return res.status(400).json({
+      error: 'Invalid request: Provide an array of texts and a target language code.'
+    });
+  }
+
+  try {
+    // Calls the google cloud translation API
+    // texts is an array of strings, targetLang is the code (e.g. 'zh', 'ms')
+    let [translations] = await translateClient.translate(texts, targetLang);
+
+    // The api returns an array but ensures it is one for consistency
+    if (!Array.isArray(translations)) {
+      translations = [translations];
+    }
+
+    // Send the translated array to the client
+    res.json({
+      translations: translations
+    });
+
+  } catch (error) {
+    // handle API errors
+    console.error('Translation API error:', error.message);
+    res.status(500).json({
+      error: 'Failed to communicate with the translation service.',
+      detail: error.message
+    });
+  }
+});
+
 // Routes
 app.get("/", (req, res) => {
   res.render("index", { title: "Senior Support - Home" });

@@ -25,3 +25,9 @@ Do not run npm init, the package.json is already included.
 Always run npm install after cloning to recreate node_modules/.
 Use nodemon for development to save time when testing changes.
 
+For Google Translation API: 
+> cd fyp-senior-connect
+> npm install @google-cloud/translate
+
+copy the path to the json file
+> $env:GOOGLE_APPLICATION_CREDENTIALS="path/to/keys-file.json" 

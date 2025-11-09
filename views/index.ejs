@@ -19,7 +19,116 @@
 
   </div>
 
+    <!-- Dropdown for changing the language -->
+    <label for="languageSelect">Translate to: </label>
+    <select id="languageSelect" onchange="handleLanguageChange(this.value)"> <!-- get the value (lang code) of chosen language--> 
+        <option value="en" selected>English</option>
+        
+        <option value="zh">Chinese (Mandarin)</option>
+        <option value="ms">Malay</option>
+        <option value="ta">Tamil</option>
+
   <script>
+    // Map Database for holding content to translate
+    const transText = {
+      // English is the default language 
+      'en': {
+        // Headertext
+        'MORNING': "Good Morning! Drag the emojis to their matching spots",
+        'AFTERNOON': "Good Afternoon! Drag the emojis to their matching spots",
+        'EVENING': "Good Evening! Drag the emojis to their matching spots",
+        'NIGHT': "Good Night! Drag the emojis to their matching spots",
+
+        // Extra (message)
+        'text1': "Checking in...",
+        'text2': "Check-in recorded successfully! 💛",
+        'text3': "Couldn't connect. Try again later 🙏",
+        'text4': "Not quite right, try again 🙏",
+        'text51': "Selected",
+        'text52': ". Drag to a basket to place",
+        'text6': "Drag an item from the tray to their matching basket.",
+      },
+      // Other language start empty. (Will be filled after translating API)
+      'zh': null,
+      'ms': null,
+      'ta': null,
+    };
+
+    // Active language code
+    let activeLangCode = 'en';
+
+    // Store the transText map into a variable as a copy 
+    let currentContent = transText[activeLangCode]; 
+
+    // Function for changing the language
+    async function handleLanguageChange(targetLangCode) {
+      activeLangCode = targetLangCode;
+      
+      // Check cache
+      if (transText[targetLangCode]) {
+        // Content already translated and stored (Cache Hit)
+        currentContent = transText[targetLangCode];
+        
+        // Call the function again to change the title to translated version and return the variable
+        setTimeBasedBackground(currentContent);
+        return currentContent;
+      }
+
+      // Translate (Cache Miss)
+      // Always translate FROM english source
+      const englishTexts = Object.values(transText.en);
+      const originalKeys = Object.keys(transText.en);
+
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texts: englishTexts, targetLang: targetLangCode })
+        });
+    
+        // Check if the HTTP status is successful (200-299)
+        if (!response.ok) {
+            // Read the body as text to get the server's error message
+            const errorText = await response.text(); 
+            
+            // Throw a custom error that includes the server's status and message
+            throw new Error(`Server translation failed (Status: ${response.status}). Detail: ${errorText.substring(0, 150)}...`);
+        }
+
+        // Safely parse the JSON data ONLY if the response was successful
+        const data = await response.json();
+
+        // ... (check response, get data)
+        const translatedStrings = data.translations;
+
+        // Build and store
+        const newContent = {};
+        originalKeys.forEach((key, index) => {
+          newContent[key] = translatedStrings[index];
+        });
+
+        // Store the translated map in the database
+        transText[targetLangCode] = newContent;
+
+        // Update the currentContent variable
+        currentContent = transText[targetLangCode];
+
+        // This calls the title again for the translated version (also works as a check)
+        setTimeBasedBackground(currentContent);
+
+      } catch (error){
+        // Catch block to handle network errors and customer error thrown
+        console.error('Translation error:', error);
+
+        // Revert dropdown state on failure
+        document.getElementById('languageSelect').value = 'en';
+        activeLangCode = 'en';
+
+        // Base language console log for error
+        console.error('Translation failed. Please check console for details: ' + error.message);
+      }
+    }
+
     // all the available emojis, the general theme is nice things, animals and food
     const allEmojis = ["☀️", "🌸", "🍎", "🌈", "🐢", "🕊️", "🌻", "🐱", "🍋", "🍉", "🐕", "🌹", "🌙", "🐇", "🌾", "🍇", "🌼", "🍊", "🐠", "🦋", "🍀", "🌺", "🐦", "🦜", "🌴", "🍒", "🌷", "🍄", "🪴"];
 
@@ -65,16 +174,16 @@
     }
 
     // Change background and text colour based on time of day
-    function setTimeBasedBackground() {
+    function setTimeBasedBackground(content) {
       // get hour (ex: 23)
       const hour = new Date().getHours();
       let bg, greeting, textcol = '#333', isNight = false;
-      if (hour >= 6 && hour < 12) { bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)'; greeting = 'Good Morning!'; }
-      else if (hour >= 12 && hour < 18) { bg = 'linear-gradient(to top,#ffd89b,#ffb347)'; greeting = 'Good Afternoon!'; }
-      else if (hour >= 18 && hour < 20) { bg = 'linear-gradient(to top,#f6a98f,#f28e63)'; greeting = 'Good Evening!'; }
-      else { bg = 'linear-gradient(to top,#2c3e50,#34495e)'; greeting = 'Good Night!'; textcol = 'white'; isNight = true; }
+      if (hour >= 6 && hour < 12) { bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)'; greeting = content.MORNING; }
+      else if (hour >= 12 && hour < 18) { bg = 'linear-gradient(to top,#ffd89b,#ffb347)'; greeting = content.AFTERNOON; }
+      else if (hour >= 18 && hour < 20) { bg = 'linear-gradient(to top,#f6a98f,#f28e63)'; greeting = content.EVENING; }
+      else { bg = 'linear-gradient(to top,#2c3e50,#34495e)'; greeting = content.NIGHT; textcol = 'white'; isNight = true; }
       document.body.style.background = bg;
-      document.getElementById('headerText').textContent = `${greeting} Drag the emojis to their matching spots`;
+      document.getElementById('headerText').textContent = greeting;
       document.getElementById('headerText').style.color = textcol;
       // Change basket colours when it's night
       document.querySelectorAll('.basket').forEach(b => {
@@ -117,7 +226,7 @@
       trayEl.appendChild(it); // add to the tray area
     });
 
-    setTimeBasedBackground();
+    setTimeBasedBackground(currentContent);
 
     // define matched variable, and set the number of needed tiles matched to check in at 2
     let matched = 0;
@@ -151,13 +260,13 @@
       activeSource = null;
     }
 
-    function placeInBasket(basket, emoji) {
+    function placeInBasket(basket, emoji, content) {
       basket.classList.add('filled');
       basket.innerHTML = `<span>${emoji}</span>`;
       const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
       if (src) src.remove();
       matched++;
-      messageEl.textContent = matched === totalNeeded ? 'Checking in... ' : '';
+      messageEl.textContent = matched === totalNeeded ? content.text1 : ''; //
       if (matched === totalNeeded) {
         setTimeout(() => {
           fetch("/checkin", {
@@ -166,8 +275,8 @@
             body: JSON.stringify({ name: "Elderly User", status: "checked in" })
           })
             .then(r => r.json())
-            .then(result => { messageEl.textContent = "Check-in recorded successfully! 💛"; console.log(result); })
-            .catch(err => { messageEl.textContent = "Couldn't connect. Try again later 🙏"; console.error(err); });
+            .then(result => { messageEl.textContent = content.text2; console.log(result); })
+            .catch(err => { messageEl.textContent = content.text3; console.error(err); });
         }, 400);
       }
     }
@@ -184,8 +293,8 @@
       mouseMoveHandler = function (ev) { activeClone.style.left = (ev.clientX - 36) + 'px'; activeClone.style.top = (ev.clientY - 36) + 'px'; };
       mouseUpHandler = function (ev) {
         const basket = basketAtPoint(ev.clientX, ev.clientY);
-        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji);
-        else messageEl.textContent = "Not quite right, try again 🙏";
+        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji, currentContent); //
+        else messageEl.textContent = currentContent.text4; //
         destroyClone();
         document.removeEventListener('mousemove', mouseMoveHandler);
         document.removeEventListener('mouseup', mouseUpHandler);
@@ -216,8 +325,8 @@
         const cx = changed ? changed.clientX : window.innerWidth / 2;
         const cy = changed ? changed.clientY : window.innerHeight / 2;
         const basket = basketAtPoint(cx, cy);
-        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji);
-        else messageEl.textContent = "Not quite right, try again 🙏";
+        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji, currentContent);
+        else messageEl.textContent = currentContent.text4;
         destroyClone();
         document.removeEventListener('touchmove', touchMoveHandler, { passive: false });
         document.removeEventListener('touchend', touchEndHandler);
@@ -233,14 +342,14 @@
       if (selectedForTap) selectedForTap.classList.remove('selected');
       selectedForTap = it;
       it.classList.add('selected');
-      messageEl.textContent = `Selected ${it.dataset.item}. Tap a basket to place.`;
+      messageEl.textContent = currentContent.text51 + it.dataset.item + currentContent.text52; // have to split into 2 strings
     }
     function onBasketTap(e) {
       const b = e.currentTarget;
-      if (!selectedForTap) { messageEl.textContent = 'Tap an item from the tray, then tap the matching basket.'; return; }
+      if (!selectedForTap) { messageEl.textContent = currentContent.text6; return; } //
       const emoji = selectedForTap.dataset.item;
-      if (b.dataset.item === emoji && !b.classList.contains('filled')) placeInBasket(b, emoji);
-      else { messageEl.textContent = "Not quite right, try again 🙏"; selectedForTap.classList.remove('selected'); selectedForTap = null; }
+      if (b.dataset.item === emoji && !b.classList.contains('filled')) placeInBasket(b, emoji, currentContent); //
+      else { messageEl.textContent = currentContent.text4; selectedForTap.classList.remove('selected'); selectedForTap = null; } //
     }
 
     // Attach handlers

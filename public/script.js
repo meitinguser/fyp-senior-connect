@@ -30,7 +30,7 @@ async function sendCheckIn(name, status) {
       // Check the response from your node.js server
       if (result.gas_response && result.gas_response.result === 'success') {
         console.log('Check in successful via server');
-        alert(`Checked in: ${name} (${status})`);
+        alert(`Status: ${name} (${status})`);
       } else {
         console.error('GAS reported an error:', result.gas_response);
         alert('Check-in failed on the Google Sheets side.');
