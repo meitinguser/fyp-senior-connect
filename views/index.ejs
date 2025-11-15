@@ -31,7 +31,7 @@
     </select>
   </div>
 
-   
+
 
   <script>
     // Map Database for holding content to translate
@@ -145,7 +145,7 @@
     /* ================== GAME LOGIC ================== */
     const allItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
     function imagePath(name) { return `/images/${name}.png`; }
-    const basketImagePath = "/images/vecteezy-wicker-basket-png.png";
+    const basketImagePath = "/images/cartoon-basket.png";
 
     const flowerItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
 
@@ -221,16 +221,33 @@
         `;
         basketsEl.appendChild(b);
       });
-    } else if (gameMode === "flowers") {
+    } if (gameMode === "flowers") {
       const b = document.createElement('div');
       b.className = 'basket';
       b.dataset.item = 'flowers';
-      b.innerHTML = `
-        <img src="${basketImagePath}" alt="Basket for flowers" draggable="false">
-        <img src="/images/flowers-hint.png" alt="Hint" class="hint" draggable="false" style="opacity:0.3;position:absolute;top:10%;left:10%;width:80%;height:80%;">
-      `;
+
+      // Main basket image
+      b.innerHTML = `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false" style="width=200px">`;
+
+      // Add only the daily selected flowers as faded
+      dailyEmojis.forEach(flower => {
+        const img = document.createElement('img');
+        img.src = imagePath(flower);
+        img.alt = flower;
+        img.className = 'placed-item';
+        img.style.opacity = 0.4; // faded initially
+        img.style.position = 'absolute';
+        img.style.top = `${10 + Math.random() * 20}%`; // random positions inside basket
+        img.style.left = `${10 + Math.random() * 20}%`;
+        img.style.width = '60%';
+        img.style.height = '60%';
+        img.style.transition = 'opacity 0.3s ease';
+        b.appendChild(img);
+      });
+
       basketsEl.appendChild(b);
     }
+
 
     // --- Build tray ---
     trayEmojis.forEach(e => {
@@ -283,6 +300,23 @@
       const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
       if (src) src.remove();
 
+      if (gameMode === "flowers") {
+        // Make the dragged flower inside the basket opaque
+        const basketImgs = Array.from(basket.querySelectorAll('.placed-item'));
+        basketImgs.forEach(img => {
+          if (img.alt === emoji) {
+            img.style.opacity = '1.0'; // fade in the dragged flower
+          }
+        });
+        // Also make the main basket image fully visible
+        const basketMainImg = basket.querySelector('img:not(.placed-item)');
+        if (basketMainImg) basketMainImg.style.opacity = '1.0';
+
+        matched++;
+      } else if (gameMode === "sorting") {
+        basket.classList.add('filled');
+        matched++;
+      }
       // Find the faded target image inside the basket and make it visible
       const hintImg = basket.querySelector('.hint');
       if (hintImg) hintImg.style.opacity = '1.0';
@@ -290,8 +324,10 @@
       // Mark this basket as filled
       basket.classList.add('filled');
 
-      matched++;
+
+      // Update message
       messageEl.textContent = matched === totalNeeded ? content.text1 : '';
+
       if (matched === totalNeeded) {
         setTimeout(() => {
           fetch("/checkin", {
@@ -305,6 +341,7 @@
         }, 400);
       }
     }
+
 
     // --- Mouse drag ---
     let mouseMoveHandler = null, mouseUpHandler = null;

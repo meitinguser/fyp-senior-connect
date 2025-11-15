@@ -6,9 +6,10 @@
 
 /* Root variables for basket and emoji sizes */
 :root {
-  --basket-size: 92px;
-  --item-size: 72px;
+  --basket-size: 140px; /* bigger basket */
+  --item-size: 72px;    /* tray items same size */
 }
+
 
 html,
 body {
@@ -96,7 +97,7 @@ body {
   justify-content: space-around;
   /* spread basets evenly */
   gap: 12px;
-  padding: 6px 8px;
+  padding: 3px 3px;
   box-sizing: border-box;
 }
 
@@ -136,8 +137,8 @@ body {
 
 .basket .placed-item {
   position: absolute;
-  width: 60%;
-  height: 60%;
+  width: 80%;
+  height: 80%;
   top: 20%;
   left: 20%;
   opacity: 0;
@@ -213,7 +214,7 @@ body {
 
 @media (max-width:460px) {
   :root {
-    --basket-size: 78px;
+    --basket-size: 110px;
     --item-size: 64px;
   }
 
