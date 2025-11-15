@@ -149,6 +149,8 @@
 
     const flowerItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
 
+
+
     // use math to come up with a seed - current year * 10000 + (current month + 1) * 100 + current date
     // ex: 29-10-2025 = 2025 * 10000 + (10 + 1) * 100 + 29
     // 20251129 
@@ -219,31 +221,16 @@
         `;
         basketsEl.appendChild(b);
       });
-    } if (gameMode === "flowers") {
-        const b = document.createElement('div');
-        b.className = 'basket';
-        b.dataset.item = 'flowers';
-        
-        // Main basket image
-        b.innerHTML = `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false">`;
-
-        // Add all flower images inside the basket as faded
-        flowerItems.forEach(flower => {
-          const img = document.createElement('img');
-          img.src = imagePath(flower);
-          img.alt = flower;
-          img.className = 'placed-item';
-          img.style.opacity = 0.3;       // faded initially
-          img.style.position = 'absolute';
-          img.style.top = '10%';
-          img.style.left = '10%';
-          img.style.width = '80%';
-          img.style.height = '80%';
-          b.appendChild(img);
-        });
-
-        basketsEl.appendChild(b);
-      }
+    } else if (gameMode === "flowers") {
+      const b = document.createElement('div');
+      b.className = 'basket';
+      b.dataset.item = 'flowers';
+      b.innerHTML = `
+        <img src="${basketImagePath}" alt="Basket for flowers" draggable="false">
+        <img src="/images/flowers-hint.png" alt="Hint" class="hint" draggable="false" style="opacity:0.3;position:absolute;top:10%;left:10%;width:80%;height:80%;">
+      `;
+      basketsEl.appendChild(b);
+    }
 
     // --- Build tray ---
     trayEmojis.forEach(e => {
@@ -293,31 +280,31 @@
     }
 
     function placeInBasket(basket, emoji, content) {
-  const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
-  if (src) src.remove();
+      const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
+      if (src) src.remove();
 
-  // Find the matching flower inside the basket
-  const basketImg = Array.from(basket.querySelectorAll('.placed-item'))
-                         .find(img => img.alt === emoji);
-  if (basketImg) basketImg.style.opacity = '1.0'; // become opaque
+      // Find the faded target image inside the basket and make it visible
+      const hintImg = basket.querySelector('.hint');
+      if (hintImg) hintImg.style.opacity = '1.0';
 
-  matched++;
-  messageEl.textContent = matched === totalNeeded ? content.text1 : '';
+      // Mark this basket as filled
+      basket.classList.add('filled');
 
-  if (matched === totalNeeded) {
-    setTimeout(() => {
-      fetch("/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Haniz Binte Omar", status: "checked in" })
-      })
-        .then(r => r.json())
-        .then(() => { messageEl.textContent = content.text2; })
-        .catch(() => { messageEl.textContent = content.text3; });
-    }, 400);
-  }
-}
-
+      matched++;
+      messageEl.textContent = matched === totalNeeded ? content.text1 : '';
+      if (matched === totalNeeded) {
+        setTimeout(() => {
+          fetch("/checkin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Haniz Binte Omar", status: "checked in" })
+          })
+            .then(r => r.json())
+            .then(() => { messageEl.textContent = content.text2; })
+            .catch(() => { messageEl.textContent = content.text3; });
+        }, 400);
+      }
+    }
 
     // --- Mouse drag ---
     let mouseMoveHandler = null, mouseUpHandler = null;
