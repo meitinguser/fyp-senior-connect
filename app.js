@@ -105,5 +105,22 @@ app.post('/checkin', async (req, res) => {
   }
 });
 
+// GET caregiver dashboard
+app.get('/caregiver', async (req, res) => {
+  try {
+    // Fetch all check-ins from Google Apps Script
+    const response = await fetch(GAS_URL); // Assuming GAS returns JSON array of check-ins
+    const checkins = await response.json();
+
+    // Render caregiver.ejs with check-ins
+    res.render('caregiver', { checkins, title: 'Caregiver Dashboard' });
+  } catch (error) {
+    console.error('Error fetching check-ins for caregiver:', error.message);
+    // Render empty list on error
+    res.render('caregiver', { checkins: [], title: 'Caregiver Dashboard' });
+  }
+});
+
+
 // Port
 app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

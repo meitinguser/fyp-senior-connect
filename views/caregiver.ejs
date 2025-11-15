@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caregiver Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Container that sits on top of the background */
+    .card-container {
+      max-width: 800px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+    }
+
+    .info-section {
+      margin-bottom: 20px;
+    }
+
+    .info-section label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    .info-section input,
+    .info-section textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .info-section textarea {
+      resize: vertical;
+    }
+
+    .button {
+      display: inline-block;
+      background: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+      margin-top: 10px;
+    }
+
+    .button:hover {
+      background: #45a049;
+    }
+
+    #headerText {
+      text-align: center;
+      font-size: 1.4rem;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="headerText"></div>
+
+  <div class="card-container">
+    <h1>Caregiver Dashboard</h1>
+
+    <div class="info-section">
+      <label for="residentName">Resident Name</label>
+      <input type="text" id="residentName" placeholder="Enter resident's name">
+    </div>
+
+    <div class="info-section">
+      <label for="checkinStatus">Check-in Status</label>
+      <textarea id="checkinStatus" rows="4" placeholder=""></textarea>
+    </div>
+
+  </div>
+
+  <script>
+    // ======== Time-based background logic (reuse existing system) ========
+    function setTimeBasedBackground() {
+      const hour = new Date().getHours();
+      let bg, textColor = '#333', greeting;
+      if (hour >= 6 && hour < 12) {
+        bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)';
+        greeting = "Good Morning!";
+      } else if (hour >= 12 && hour < 18) {
+        bg = 'linear-gradient(to top,#ffd89b,#ffb347)';
+        greeting = "Good Afternoon!";
+      } else if (hour >= 18 && hour < 20) {
+        bg = 'linear-gradient(to top,#f6a98f,#f28e63)';
+        greeting = "Good Evening!";
+      } else {
+        bg = 'linear-gradient(to top,#2c3e50,#34495e)';
+        greeting = "Good Night!";
+        textColor = 'white';
+      }
+      document.body.style.background = bg;
+      document.getElementById('headerText').textContent = greeting;
+      document.getElementById('headerText').style.color = textColor;
+    }
+
+    setTimeBasedBackground();
+
+    function submitCheckin() {
+      const name = document.getElementById('residentName').value;
+      const status = document.getElementById('checkinStatus').value;
+
+      // Placeholder POST request to server
+      console.log("Submitting check-in:", { name, status });
+      alert("Check-in submitted for " + name);
+    }
+  </script>
+</body>
+
+</html>

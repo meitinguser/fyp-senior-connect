@@ -1,3 +1,10 @@
+/* ========= Elderly Sorting Game ========== */
+
+/* The CSS :root pseudo-class matches the document's root element. */
+/* In HTML, the root element is always the <html> element. */
+/* custom properties, reusable values */
+
+/* Root variables for basket and emoji sizes */
 :root {
   --basket-size: 92px;
   --item-size: 72px;
@@ -6,49 +13,88 @@
 html,
 body {
   height: 100%;
+  /* Fully use viewport */
   margin: 0;
+  /* Eliminate default browser margins */
   font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;
+  /* Set a consistent font*/
+
+  /* Anti-aliasing = smooth edges */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Same thing as above but for macOS */
+
+  /* Disable tap highlight color on mobile browsers for a cleaner look */
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
 }
 
 body {
   display: flex;
+  /* Flex layout for easy positioning */
   flex-direction: column;
+  /* Stack elements vertically */
   align-items: center;
+  /* Center elements horizontally */
   justify-content: space-between;
-  padding: 12px;
-  box-sizing: border-box;
-  transition: background 600ms ease;
-  user-select: none;
-  touch-action: none;
+  /* Evenly space elements top to bottom */
   min-height: 100vh;
+  /* Fill full viewport height */
+
+  padding: 12px;
+  /* Add spacing */
+  box-sizing: border-box;
+  /* Include padding and border in total size */
+
+  user-select: none;
+  /* Prevent text selection during interaction */
+  touch-action: none;
+  /* Disable default touch gestures */
+
+  transition: background 600ms ease;
+  /* Smooth background color changes */
 }
+
 
 #headerText {
   margin: 6px 0 6px 0;
-  font-size: 1.25rem;
+  /* Margins on the top and bottom, none on left/right */
+  font-size: 1.50rem;
+  /* Header default font size*/
   text-align: center;
+  /* Align header text in middle */
 }
 
 #gameArea {
+  /* Full width but limited on large screens for better usability */
   width: 100%;
-  max-width: 520px;
+  max-width: 800px;
+
   flex: 1 1 auto;
+  /* Flexible height that grows or shrinks with screen size */
+
+  /* Stack baskets and emojis vertically */
   display: flex;
   flex-direction: column;
+
+  /* Center items horizontally and distribute them evenly vertically */
   align-items: center;
   justify-content: space-evenly;
+
+  /* Space between baskets and padding so content doesn’t touch edges */
   gap: 12px;
   padding: 8px 0;
+
   box-sizing: border-box;
+  /* Include padding and borders in total size */
+
 }
 
 .baskets {
   width: 100%;
   display: flex;
   justify-content: space-around;
+  /* spread basets evenly */
   gap: 12px;
   padding: 6px 8px;
   box-sizing: border-box;
@@ -60,28 +106,46 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
   border-radius: 18px;
-  border: 3px solid #f6c67a;
-  background: linear-gradient(to top, #fffbe6, #ffe0b2);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
-  font-size: 1.8rem;
-  color: #333;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 300ms;
+  background: none;
+  box-shadow: none;
+  position: relative;
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
-.basket .hint {
-  opacity: 0.3;
+.basket img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.4;
+  /* Faded until filled */
   transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
 }
 
-.basket.filled .hint {
+.basket.filled img {
   opacity: 1;
+  /* Fully visible when matched */
 }
 
 .basket.active {
-  transform: scale(1.06);
-  border-color: #27ae60;
-  box-shadow: 0 10px 18px rgba(39, 174, 96, 0.25);
+  transform: scale(1.08);
+  box-shadow: 0 10px 18px rgba(39, 174, 96, 0.35);
+}
+
+.basket .placed-item {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  top: 20%;
+  left: 20%;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.basket.filled .placed-item {
+  opacity: 1;
 }
 
 #tray {
@@ -106,23 +170,38 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  border-radius: 12px;
   background: #fff;
+  border-radius: 12px;
   border: 2px solid #f5b041;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.09);
-  touch-action: none;
-  user-select: none;
-  -webkit-user-drag: none;
   cursor: grab;
   transition: transform 120ms ease, opacity 120ms;
 }
 
+.item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
 .item.dragging {
-  opacity: 0.92;
-  transform: scale(1.06);
+  opacity: 0.95;
+  transform: scale(1.08);
   cursor: grabbing;
 }
+
+.item.selected {
+  border-color: gold;
+  transform: scale(1.05);
+}
+
+.item.dragging img {
+  opacity: 1;
+}
+
 
 #message {
   min-height: 24px;
@@ -151,7 +230,7 @@ body {
   }
 }
 
-/* For language selector dropdown list */
+/* =========== Language selection dropdown list =========== */
 
 /* For center and padding */
 .language-selector-container {

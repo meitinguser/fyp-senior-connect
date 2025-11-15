@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Senior Connect - Daily Emoji Check-In</title>
+  <title>Senior Connect - Daily Picture Check-In</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 
@@ -22,31 +22,35 @@
   <!-- Dropdown for changing the language -->
   <div class="language-selector-container">
     <label for="languageSelect">Select Language:</label>
-    <select id="languageSelect" onchange="handleLanguageChange(this.value)"> <!-- get the value (lang code) of chosen language--> 
-        <option value="en" selected>English</option>
-        <option value="zh">Chinese (Mandarin)</option>
-        <option value="ms">Malay</option>
-        <option value="ta">Tamil</option>
+    <select id="languageSelect" onchange="handleLanguageChange(this.value)">
+      <!-- get the value (lang code) of chosen language-->
+      <option value="en" selected>English</option>
+      <option value="zh">Chinese (Mandarin)</option>
+      <option value="ms">Malay</option>
+      <option value="ta">Tamil</option>
     </select>
   </div>
+
+   
 
   <script>
     // Map Database for holding content to translate
     const transText = {
       // English is the default language 
+
       'en': {
         // Headertext
-        'MORNING': "Good Morning! Drag the emojis to their matching spots",
-        'AFTERNOON': "Good Afternoon! Drag the emojis to their matching spots",
-        'EVENING': "Good Evening! Drag the emojis to their matching spots",
-        'NIGHT': "Good Night! Drag the emojis to their matching spots",
+        'MORNING': "Good Morning! Drag the flowers to their place",
+        'AFTERNOON': "Good Afternoon! Drag the flowers to their place",
+        'EVENING': "Good Evening! Drag the flowers to their place",
+        'NIGHT': "Good Night! Drag the flowers to their place",
 
         // Extra (message)
         'text1': "Checking in...",
         'text2': "Check-in recorded successfully! 💛",
         'text3': "Couldn't connect. Try again later 🙏",
         'text4': "Not quite right, try again 🙏",
-        'text51': "Selected",
+        'text51': "Selected ",
         'text52': ". Drag to a basket to place",
         'text6': "Drag an item from the tray to their matching basket.",
       },
@@ -60,17 +64,17 @@
     let activeLangCode = 'en';
 
     // Store the transText map into a variable as a copy 
-    let currentContent = transText[activeLangCode]; 
+    let currentContent = transText[activeLangCode];
 
     // Function for changing the language
     async function handleLanguageChange(targetLangCode) {
       activeLangCode = targetLangCode;
-      
+
       // Check cache
       if (transText[targetLangCode]) {
         // Content already translated and stored (Cache Hit)
         currentContent = transText[targetLangCode];
-        
+
         // Call the function again to change the title to translated version and return the variable
         setTimeBasedBackground(currentContent);
         return currentContent;
@@ -85,16 +89,16 @@
         const response = await fetch('/api/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texts: englishTexts, targetLang: targetLangCode })
+          body: JSON.stringify({ texts: englishTexts, targetLang: targetLangCode })
         });
-    
+
         // Check if the HTTP status is successful (200-299)
         if (!response.ok) {
-            // Read the body as text to get the server's error message
-            const errorText = await response.text(); 
-            
-            // Throw a custom error that includes the server's status and message
-            throw new Error(`Server translation failed (Status: ${response.status}). Detail: ${errorText.substring(0, 150)}...`);
+          // Read the body as text to get the server's error message
+          const errorText = await response.text();
+
+          // Throw a custom error that includes the server's status and message
+          throw new Error(`Server translation failed (Status: ${response.status}). Detail: ${errorText.substring(0, 150)}...`);
         }
 
         // Safely parse the JSON data ONLY if the response was successful
@@ -118,7 +122,7 @@
         // This calls the title again for the translated version (also works as a check)
         setTimeBasedBackground(currentContent);
 
-      } catch (error){
+      } catch (error) {
         // Catch block to handle network errors and customer error thrown
         console.error('Translation error:', error);
 
@@ -131,42 +135,45 @@
       }
     }
 
-    // all the available emojis, the general theme is nice things, animals and food
-    const allEmojis = ["☀️", "🌸", "🍎", "🌈", "🐢", "🕊️", "🌻", "🐱", "🍋", "🍉", "🐕", "🌹", "🌙", "🐇", "🌾", "🍇", "🌼", "🍊", "🐠", "🦋", "🍀", "🌺", "🐦", "🦜", "🌴", "🍒", "🌷", "🍄", "🪴"];
+
+    /* ================== CONFIG ================== */
+    // 🎮 Choose a random game mode each time the page loads
+    const allGames = ["flowers", "sorting"];
+    const gameMode = allGames[Math.floor(Math.random() * allGames.length)];
+    console.log("Active game:", gameMode);
+
+    /* ================== GAME LOGIC ================== */
+    const allItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
+    function imagePath(name) { return `/images/${name}.png`; }
+    const basketImagePath = "/images/vecteezy-wicker-basket-png.png";
+
+    const flowerItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
 
     // use math to come up with a seed - current year * 10000 + (current month + 1) * 100 + current date
     // ex: 29-10-2025 = 2025 * 10000 + (10 + 1) * 100 + 29
-    // 20251129
+    // 20251129 
     function getDailySeed() {
       const t = new Date();
       return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
-      console.log(t.getDate())
     }
     // uses Math library, makes a random-looking number based on a given seed, which will be a number between 0 and 1
-    // if you don't have this the emojis and everything don't load
+    // if you don't have this, everything doesn't load
     function seededRandom(seed) {
       const x = Math.sin(seed) * 10000;
       return x - Math.floor(x);
     }
-
-    // get emoji function, runs 3 times for 3 emojis
     function getDailyEmojis(count = 3) {
-      // copy emoji list
-      const copy = [...allEmojis];
-      // make a empty list to store emojis
+      const copy = [...allItems];
       const chosen = [];
-      // call generate seed command
-      const seed = getDailySeed();
-      // let i = 0, count up to 3, and for each number, get emoji
+      const seed = getDailySeed() + Math.floor(Math.random() * 1000); // Add randomness
       for (let i = 0; i < count; i++) {
         const idx = Math.floor(seededRandom(seed + i) * copy.length);
         chosen.push(copy[idx]);
         copy.splice(idx, 1);
       }
-      // return the list of emojis
       return chosen;
     }
-    // Shuffle the list (random, more engaging)
+
     function shuffleArray(a) {
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -175,72 +182,89 @@
       return a;
     }
 
-    // Change background and text colour based on time of day
     function setTimeBasedBackground(content) {
-      // get hour (ex: 23)
       const hour = new Date().getHours();
-      let bg, greeting, textcol = '#333', isNight = false;
+      let bg, greeting, textcol = '#333';
       if (hour >= 6 && hour < 12) { bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)'; greeting = content.MORNING; }
       else if (hour >= 12 && hour < 18) { bg = 'linear-gradient(to top,#ffd89b,#ffb347)'; greeting = content.AFTERNOON; }
       else if (hour >= 18 && hour < 20) { bg = 'linear-gradient(to top,#f6a98f,#f28e63)'; greeting = content.EVENING; }
-      else { bg = 'linear-gradient(to top,#2c3e50,#34495e)'; greeting = content.NIGHT; textcol = 'white'; isNight = true; }
+      else { bg = 'linear-gradient(to top,#2c3e50,#34495e)'; greeting = content.NIGHT; textcol = 'white'; }
       document.body.style.background = bg;
       document.getElementById('headerText').textContent = greeting;
       document.getElementById('headerText').style.color = textcol;
-      // Change basket colours when it's night
-      document.querySelectorAll('.basket').forEach(b => {
-        if (isNight) {
-          b.style.background = 'linear-gradient(to top,#4b5c6b,#2c3e50)';
-          b.style.borderColor = '#fff';
-          b.style.color = '#fff';
-        } else {
-          b.style.background = 'linear-gradient(to top,#fffbe6,#ffe0b2)';
-          b.style.borderColor = '#f6c67a';
-          b.style.color = '#333';
-        }
-      });
+      document.getElementById('message').style.color = textcol;
+
     }
 
-    // select elements on screen (baskets, tray, message)
     const basketsEl = document.getElementById('baskets');
     const trayEl = document.getElementById('tray');
     const messageEl = document.getElementById('message');
 
-    // call the dailyemoji function, send these to the tray, shuffle them
     const dailyEmojis = getDailyEmojis(3);
     const trayEmojis = shuffleArray([...dailyEmojis]);
 
-    // for each emoji, make a div for a basket
-    dailyEmojis.forEach(e => {
-      const b = document.createElement('div');
-      b.className = 'basket';
-      b.dataset.item = e;
-      b.innerHTML = `<span class="hint">${e}</span>`;
-      basketsEl.appendChild(b);
-    });
+    // ======== inside build baskets section ======== 
+    if (gameMode === "sorting") {
+      dailyEmojis.forEach(e => {
+        const b = document.createElement('div');
+        b.className = 'basket';
+        b.dataset.item = e;
+        // No basket image now — only faded target image
+        b.innerHTML = `
+          <img src="${imagePath(e)}" 
+              alt="Target ${e}" 
+              class="hint" 
+              draggable="false" 
+              style="opacity:0.3;transition:opacity 0.3s ease;width:100%;height:auto;">
+        `;
+        basketsEl.appendChild(b);
+      });
+    } if (gameMode === "flowers") {
+        const b = document.createElement('div');
+        b.className = 'basket';
+        b.dataset.item = 'flowers';
+        
+        // Main basket image
+        b.innerHTML = `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false">`;
 
-    // makes 1 div per emoji in the tray
+        // Add all flower images inside the basket as faded
+        flowerItems.forEach(flower => {
+          const img = document.createElement('img');
+          img.src = imagePath(flower);
+          img.alt = flower;
+          img.className = 'placed-item';
+          img.style.opacity = 0.3;       // faded initially
+          img.style.position = 'absolute';
+          img.style.top = '10%';
+          img.style.left = '10%';
+          img.style.width = '80%';
+          img.style.height = '80%';
+          b.appendChild(img);
+        });
+
+        basketsEl.appendChild(b);
+      }
+
+    // --- Build tray ---
     trayEmojis.forEach(e => {
-      const it = document.createElement('div'); // make box
-      it.className = 'item'; // assign classname 'item'
-      it.textContent = e; // write the emoji into it as text
-      it.dataset.item = e; // stores the emoji's value in data-item
-      trayEl.appendChild(it); // add to the tray area
+      const it = document.createElement('div');
+      it.className = 'item';
+      it.dataset.item = e;
+      it.innerHTML = `<img src="${imagePath(e)}" alt="${e}" draggable="false">`;
+      trayEl.appendChild(it);
     });
 
     setTimeBasedBackground(currentContent);
 
-    // define matched variable, and set the number of needed tiles matched to check in at 2
     let matched = 0;
-    const totalNeeded = 2;
+    const totalNeeded = 1;
     let activeClone = null;
     let activeSource = null;
     let selectedForTap = null;
 
     function basketAtPoint(x, y) {
       const el = document.elementFromPoint(x, y);
-      if (!el) return null;
-      return el.closest('.basket');
+      return el ? el.closest('.basket') : null;
     }
 
     function createClone(text, x, y) {
@@ -251,7 +275,7 @@
       c.style.top = (y - 36) + 'px';
       c.style.zIndex = 9999;
       c.style.pointerEvents = 'none';
-      c.textContent = text;
+      c.innerHTML = `<img src="${imagePath(text)}" alt="${text}" draggable="false">`;
       document.body.appendChild(c);
       return c;
     }
@@ -262,28 +286,40 @@
       activeSource = null;
     }
 
-    function placeInBasket(basket, emoji, content) {
-      basket.classList.add('filled');
-      basket.innerHTML = `<span>${emoji}</span>`;
-      const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
-      if (src) src.remove();
-      matched++;
-      messageEl.textContent = matched === totalNeeded ? content.text1 : ''; //
-      if (matched === totalNeeded) {
-        setTimeout(() => {
-          fetch("/checkin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: "Elderly User", status: "checked in" })
-          })
-            .then(r => r.json())
-            .then(result => { messageEl.textContent = content.text2; console.log(result); })
-            .catch(err => { messageEl.textContent = content.text3; console.error(err); });
-        }, 400);
-      }
+    function isMatch(basket, emoji) {
+      if (gameMode === "sorting") return basket.dataset.item === emoji;
+      if (gameMode === "flowers") return basket.dataset.item === "flowers" && flowerItems.includes(emoji);
+      return false;
     }
 
-    // Mouse drag for desktop
+    function placeInBasket(basket, emoji, content) {
+  const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
+  if (src) src.remove();
+
+  // Find the matching flower inside the basket
+  const basketImg = Array.from(basket.querySelectorAll('.placed-item'))
+                         .find(img => img.alt === emoji);
+  if (basketImg) basketImg.style.opacity = '1.0'; // become opaque
+
+  matched++;
+  messageEl.textContent = matched === totalNeeded ? content.text1 : '';
+
+  if (matched === totalNeeded) {
+    setTimeout(() => {
+      fetch("/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Haniz Binte Omar", status: "checked in" })
+      })
+        .then(r => r.json())
+        .then(() => { messageEl.textContent = content.text2; })
+        .catch(() => { messageEl.textContent = content.text3; });
+    }, 400);
+  }
+}
+
+
+    // --- Mouse drag ---
     let mouseMoveHandler = null, mouseUpHandler = null;
     function onItemMouseDown(e) {
       e.preventDefault();
@@ -292,20 +328,25 @@
       activeSource = item;
       activeSource.classList.add('dragging');
       activeClone = createClone(emoji, e.clientX, e.clientY);
-      mouseMoveHandler = function (ev) { activeClone.style.left = (ev.clientX - 36) + 'px'; activeClone.style.top = (ev.clientY - 36) + 'px'; };
-      mouseUpHandler = function (ev) {
+
+      mouseMoveHandler = ev => {
+        activeClone.style.left = (ev.clientX - 36) + 'px';
+        activeClone.style.top = (ev.clientY - 36) + 'px';
+      };
+      mouseUpHandler = ev => {
         const basket = basketAtPoint(ev.clientX, ev.clientY);
-        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji, currentContent); //
-        else messageEl.textContent = currentContent.text4; //
+        if (basket && isMatch(basket, emoji)) placeInBasket(basket, emoji, currentContent);
+        else messageEl.textContent = currentContent.text4;
         destroyClone();
         document.removeEventListener('mousemove', mouseMoveHandler);
         document.removeEventListener('mouseup', mouseUpHandler);
       };
+
       document.addEventListener('mousemove', mouseMoveHandler);
       document.addEventListener('mouseup', mouseUpHandler);
     }
 
-    // Touch drag for mobile
+    // --- Touch drag ---
     let touchMoveHandler = null, touchEndHandler = null;
     function onItemTouchStart(e) {
       if (e.touches.length > 1) return;
@@ -316,56 +357,64 @@
       activeSource.classList.add('dragging');
       const t = e.touches[0];
       activeClone = createClone(emoji, t.clientX, t.clientY);
-      touchMoveHandler = function (ev) {
-        if (ev.touches.length === 0) return;
+
+      touchMoveHandler = ev => {
+        if (!ev.touches.length) return;
         const tt = ev.touches[0];
         activeClone.style.left = (tt.clientX - 36) + 'px';
         activeClone.style.top = (tt.clientY - 36) + 'px';
       };
-      touchEndHandler = function (ev) {
+
+      touchEndHandler = ev => {
         const changed = ev.changedTouches && ev.changedTouches[0];
-        const cx = changed ? changed.clientX : window.innerWidth / 2;
-        const cy = changed ? changed.clientY : window.innerHeight / 2;
+        const cx = changed ? changed.clientX : 0;
+        const cy = changed ? changed.clientY : 0;
         const basket = basketAtPoint(cx, cy);
-        if (basket && basket.dataset.item === emoji && !basket.classList.contains('filled')) placeInBasket(basket, emoji, currentContent);
+        if (basket && isMatch(basket, emoji)) placeInBasket(basket, emoji, currentContent);
         else messageEl.textContent = currentContent.text4;
         destroyClone();
-        document.removeEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.removeEventListener('touchmove', touchMoveHandler);
         document.removeEventListener('touchend', touchEndHandler);
       };
+
       document.addEventListener('touchmove', touchMoveHandler, { passive: false });
       document.addEventListener('touchend', touchEndHandler);
     }
 
-    // Tap-to-select fallback
+    // --- Tap-to-select ---
     function onItemTap(e) {
       const it = e.currentTarget;
-      if (selectedForTap === it) { it.classList.remove('selected'); selectedForTap = null; messageEl.textContent = ''; return; }
+      if (selectedForTap === it) {
+        it.classList.remove('selected');
+        selectedForTap = null;
+        messageEl.textContent = '';
+        return;
+      }
       if (selectedForTap) selectedForTap.classList.remove('selected');
       selectedForTap = it;
       it.classList.add('selected');
-      messageEl.textContent = currentContent.text51 + it.dataset.item + currentContent.text52; // have to split into 2 strings
-    }
-    function onBasketTap(e) {
-      const b = e.currentTarget;
-      if (!selectedForTap) { messageEl.textContent = currentContent.text6; return; } //
-      const emoji = selectedForTap.dataset.item;
-      if (b.dataset.item === emoji && !b.classList.contains('filled')) placeInBasket(b, emoji, currentContent); //
-      else { messageEl.textContent = currentContent.text4; selectedForTap.classList.remove('selected'); selectedForTap = null; } //
+      messageEl.textContent = currentContent.text51 + it.dataset.item + currentContent.text52;
     }
 
-    // Attach handlers
+    function onBasketTap(e) {
+      const b = e.currentTarget;
+      if (!selectedForTap) { messageEl.textContent = currentContent.text6; return; }
+      const emoji = selectedForTap.dataset.item;
+      if (isMatch(b, emoji)) placeInBasket(b, emoji, currentContent);
+      else { messageEl.textContent = currentContent.text4; }
+      selectedForTap.classList.remove('selected');
+      selectedForTap = null;
+    }
+
+    // --- Attach handlers ---
     document.querySelectorAll('.item').forEach(it => {
       it.addEventListener('mousedown', onItemMouseDown);
       it.addEventListener('touchstart', onItemTouchStart, { passive: false });
       it.addEventListener('click', onItemTap);
     });
     document.querySelectorAll('.basket').forEach(b => {
-      b.addEventListener('mouseenter', () => b.classList.add('active'));
-      b.addEventListener('mouseleave', () => b.classList.remove('active'));
       b.addEventListener('click', onBasketTap);
     });
-
   </script>
 </body>
 
