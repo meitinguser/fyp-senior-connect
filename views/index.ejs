@@ -157,10 +157,10 @@
     animals: ["cat", "dog", "bird"]
   };
 
-    // Pick ONE dataset for the flowers game only
+    // Pick ONE dataset
     const flowerDatasetKeys = Object.keys(datasets);
     const chosenDatasetKey = flowerDatasetKeys[Math.floor(Math.random() * flowerDatasetKeys.length)];
-    const chosenDataset = datasets[chosenDatasetKey];   // <-- the actual list used today
+    const chosenDataset = datasets[chosenDatasetKey]; 
 
     console.log("Dataset selected for flower game:", chosenDatasetKey, chosenDataset);
 
