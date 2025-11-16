@@ -40,10 +40,10 @@
 
       'en': {
         // Headertext
-        'MORNING': "Good Morning! Drag the flowers to their place",
-        'AFTERNOON': "Good Afternoon! Drag the flowers to their place",
-        'EVENING': "Good Evening! Drag the flowers to their place",
-        'NIGHT': "Good Night! Drag the flowers to their place",
+        'MORNING': "Good Morning! Drag the picture to its place",
+        'AFTERNOON': "Good Afternoon! Drag the picture to its place",
+        'EVENING': "Good Evening! Drag the picture to its place",
+        'NIGHT': "Good Night! Drag the picture to its place",
 
         // Extra (message)
         'text1': "Checking in...",
@@ -147,7 +147,24 @@
     function imagePath(name) { return `/images/${name}.png`; }
     const basketImagePath = "/images/cartoon-basket.png";
 
-    const flowerItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
+
+  // All datasets 
+    const datasets = {
+    berries: ["strawberry", "blueberry", "cherry-tomato"],
+    flowers: ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"],
+    fruits: ["apple", "banana", "orange"],
+    veggies: ["carrot", "broccoli", "potato"],
+    animals: ["cat", "dog", "bird"]
+  };
+
+    // Pick ONE dataset for the flowers game only
+    const flowerDatasetKeys = Object.keys(datasets);
+    const chosenDatasetKey = flowerDatasetKeys[Math.floor(Math.random() * flowerDatasetKeys.length)];
+    const chosenDataset = datasets[chosenDatasetKey];   // <-- the actual list used today
+
+    console.log("Dataset selected for flower game:", chosenDatasetKey, chosenDataset);
+
+    const flowerItems = chosenDataset;
 
 
 
@@ -176,6 +193,7 @@
       return chosen;
     }
 
+    
     function shuffleArray(a) {
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -202,7 +220,7 @@
     const trayEl = document.getElementById('tray');
     const messageEl = document.getElementById('message');
 
-    const dailyEmojis = getDailyEmojis(3);
+    const dailyEmojis = shuffleArray([...chosenDataset]).slice(0, 3);
     const trayEmojis = shuffleArray([...dailyEmojis]);
 
     // ======== inside build baskets section ======== 
@@ -227,7 +245,8 @@
       b.dataset.item = 'flowers';
 
       // Main basket image
-      b.innerHTML = `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false" style="width=200px">`;
+      b.innerHTML = 
+      `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false" style="width:300px; opacity=1.0">`;
 
       // Add only the daily selected flowers as faded
       dailyEmojis.forEach(flower => {
@@ -237,10 +256,11 @@
         img.className = 'placed-item';
         img.style.opacity = 0.4; // faded initially
         img.style.position = 'absolute';
-        img.style.top = `${10 + Math.random() * 20}%`; // random positions inside basket
-        img.style.left = `${10 + Math.random() * 20}%`;
-        img.style.width = '60%';
-        img.style.height = '60%';
+        img.style.left = `${10 + Math.random() * 15}%`;
+        img.style.right = `${10 + Math.random() * 15}%`;
+        img.style.width = "80%";
+        img.style.height = "80%";
+
         img.style.transition = 'opacity 0.3s ease';
         b.appendChild(img);
       });
@@ -291,10 +311,19 @@
     }
 
     function isMatch(basket, emoji) {
-      if (gameMode === "sorting") return basket.dataset.item === emoji;
-      if (gameMode === "flowers") return basket.dataset.item === "flowers" && flowerItems.includes(emoji);
+      // Sorting game (unchanged)
+      if (gameMode === "sorting") {
+        return basket.dataset.item === emoji;
+      }
+
+      // Flowers game
+      if (gameMode === "flowers") {
+        return basket.dataset.item === "flowers" && chosenDataset.includes(emoji);
+      }
+
       return false;
     }
+
 
     function placeInBasket(basket, emoji, content) {
       const src = trayEl.querySelector(`.item[data-item='${emoji}']`);
