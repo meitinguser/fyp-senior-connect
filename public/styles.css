@@ -49,8 +49,7 @@ body {
 
   user-select: none;
   /* Prevent text selection during interaction */
-  touch-action: none;
-  /* Disable default touch gestures */
+
 
   transition: background 600ms ease;
   /* Smooth background color changes */
