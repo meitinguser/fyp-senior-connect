@@ -1,0 +1,38 @@
+/* Puzzle wrapper behaves like a perfect square */
+#puzzleWrapper {
+  width: min(90vw, 300px);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  display: none;
+  margin-bottom: 40px;     /* consistent spacing */
+  padding-top: 0;
+}
+#puzzleTitle {
+  text-align: center;
+  color: white;
+}
+
+#puzzleGrid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  
+}
+
+.puzzle-piece {
+  background-size: 200% 200%; /* because 2×2 = 100%/2 = 50% per piece */
+  background-repeat: no-repeat;
+  cursor: grab;
+  transition: transform .15s ease;
+}
+
+.puzzle-piece:active {
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.piece-correct {
+  outline: 3px solid #4caf50;
+}

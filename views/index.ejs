@@ -6,11 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Senior Connect - Daily Picture Check-In</title>
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Only load omikuji and puzzle if needed -->
+  <link rel="stylesheet" href="/omikuji.css" />
+  <link rel="stylesheet" href="/puzzle.css">
+<script defer src="/puzzle.js"></script>
+
 </head>
 
 <body>
-  <div id="headerText"></div> <!-- Top text, changes based on the time of day-->
 
+  <div id="headerText"></div> <!-- Top text, changes based on the time of day-->
+  <div id="2ndHeaderText"></div>
   <div id="gameArea"> <!--The div that stores the items and the baskets -->
 
     <div id="tray" role="list"></div> <!-- the tray, can be reordered by swapping with the baskets -->
@@ -19,9 +26,29 @@
 
   </div>
 
+  <!-- FORTUNE GAME (HIDDEN UNTIL gameMode === 'omikuji') -->
+
+  <div id="omikujiWrapper" style="display:none;">
+    <h2>Draw Your Fortune</h2>
+    <div id="sticksTray"></div>
+    <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
+  </div>
+
+  <!-- PUZZLE GAME (HIDDEN UNTIL gameMode === 'puzzle') -->
+  <div id="puzzleWrapper" style="display:none;">
+    <h2 id="puzzleTitle">Complete the Picture</h2>
+    <div id="puzzleGrid">
+      <div class="puzzle-piece"></div>
+      <div class="puzzle-piece"></div>
+      <div class="puzzle-piece"></div>
+      <div class="puzzle-piece"></div>
+    </div>
+  </div>
+
+
   <!-- Dropdown for changing the language -->
   <div class="language-selector-container">
-    <label for="languageSelect">Select Language:</label>
+    <label for="languageSelect" id="languageSelectLabel">Select Language:</label>
     <select id="languageSelect" onchange="handleLanguageChange(this.value)">
       <!-- get the value (lang code) of chosen language-->
       <option value="en" selected>English</option>
@@ -40,10 +67,20 @@
 
       'en': {
         // Headertext
-        'MORNING': "Good Morning! Drag the picture to its place",
-        'AFTERNOON': "Good Afternoon! Drag the picture to its place",
-        'EVENING': "Good Evening! Drag the picture to its place",
-        'NIGHT': "Good Night! Drag the picture to its place",
+        'MORNING': "Good Morning!",
+        'AFTERNOON': "Good Afternoon!",
+        'EVENING': "Good Evening!",
+        'NIGHT': "Good Night!",
+
+        // Game mode header/subtitle text
+        'sorting': "Drag to match each picture",
+        'basket': "Drag all items into the basket.",
+        'puzzle': "Drag each puzzle piece into its correct position.",
+        'fortune': "Click to get today's fortune!",
+
+        // Puzzle extra UI 
+        'puzzleTitle': "Complete the Picture",
+        'drawAgain': "Draw Again",
 
         // Extra (message)
         'text1': "Checking in...",
@@ -66,6 +103,26 @@
     // Store the transText map into a variable as a copy 
     let currentContent = transText[activeLangCode];
 
+    function updateGameText() {
+      if (gameMode === "sorting") {
+        document.getElementById("2ndHeaderText").textContent = currentContent.sorting;
+      }
+
+      if (gameMode === "flowers") {
+        document.getElementById("2ndHeaderText").textContent = currentContent.basket;
+      }
+
+      if (gameMode === "puzzle") {
+        document.getElementById("puzzleTitle").textContent = currentContent.puzzleTitle;
+        document.getElementById("2ndHeaderText").textContent = currentContent.puzzle;
+      }
+
+      if (gameMode === "omikuji") {
+        document.getElementById("omikujiTitle").textContent = currentContent.fortune;
+        document.getElementById("drawAgainBtn").textContent = currentContent.drawAgain;
+      }
+    }
+
     // Function for changing the language
     async function handleLanguageChange(targetLangCode) {
       activeLangCode = targetLangCode;
@@ -77,6 +134,7 @@
 
         // Call the function again to change the title to translated version and return the variable
         setTimeBasedBackground(currentContent);
+        updateGameText();
         return currentContent;
       }
 
@@ -121,6 +179,8 @@
 
         // This calls the title again for the translated version (also works as a check)
         setTimeBasedBackground(currentContent);
+        updateGameText();
+
 
       } catch (error) {
         // Catch block to handle network errors and customer error thrown
@@ -138,34 +198,64 @@
 
     /* ================== CONFIG ================== */
     // 🎮 Choose a random game mode each time the page loads
-    const allGames = ["flowers", "sorting"];
+
+    const allGames = ["flowers", "sorting", "omikuji", "puzzle"];
     const gameMode = allGames[Math.floor(Math.random() * allGames.length)];
     console.log("Active game:", gameMode);
 
     /* ================== GAME LOGIC ================== */
     const allItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
     function imagePath(name) { return `/images/${name}.png`; }
-    const basketImagePath = "/images/cartoon-basket.png";
+    const basketImagePath = "/images/basket-top-view.png";
 
-
-  // All datasets 
+    // All datasets 
     const datasets = {
-    berries: ["strawberry", "blueberry", "cherry-tomato"],
-    flowers: ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"],
-    fruits: ["apple", "banana", "orange"],
-    veggies: ["carrot", "broccoli", "potato"],
-    animals: ["cat", "dog", "bird"]
-  };
+      berries: ["strawberry", "blueberry", "cherry-tomato"],
+      flowers: ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"],
+      fruits: ["apple", "banana", "orange"],
+      veggies: ["carrot", "broccoli", "potato"],
+      animals: ["cat", "dog", "bird"]
+    };
 
     // Pick ONE dataset
     const flowerDatasetKeys = Object.keys(datasets);
     const chosenDatasetKey = flowerDatasetKeys[Math.floor(Math.random() * flowerDatasetKeys.length)];
-    const chosenDataset = datasets[chosenDatasetKey]; 
+    const chosenDataset = datasets[chosenDatasetKey];
 
     console.log("Dataset selected for flower game:", chosenDatasetKey, chosenDataset);
 
     const flowerItems = chosenDataset;
+    
+    // =====================
+    // SHOW/HIDE GAME WRAPPER
+    // =====================
+    const gameArea = document.getElementById("gameArea");
+    const omikujiWrapper = document.getElementById("omikujiWrapper");
+    const puzzleWrapper = document.getElementById("puzzleWrapper");
 
+
+    // Hide everything initially
+    gameArea.style.display = "none";
+    omikujiWrapper.style.display = "none";
+
+    // Show the correct wrapper based on gameMode
+    // Hide everything first
+    gameArea.style.display = "none";
+    omikujiWrapper.style.display = "none";
+    puzzleWrapper.style.display = "none";
+
+    // Now show only the correct game
+    if (gameMode === "sorting" || gameMode === "flowers") {
+      gameArea.style.display = "flex";
+    }
+
+    if (gameMode === "omikuji") {
+      omikujiWrapper.style.display = "block";
+    }
+
+    if (gameMode === "puzzle") {
+      puzzleWrapper.style.display = "block";
+    }
 
 
     // use math to come up with a seed - current year * 10000 + (current month + 1) * 100 + current date
@@ -193,7 +283,7 @@
       return chosen;
     }
 
-    
+
     function shuffleArray(a) {
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -212,6 +302,9 @@
       document.body.style.background = bg;
       document.getElementById('headerText').textContent = greeting;
       document.getElementById('headerText').style.color = textcol;
+      document.getElementById('2ndHeaderText').style.color = textcol;
+      document.getElementById('languageSelectLabel').style.color = textcol;
+
       document.getElementById('message').style.color = textcol;
 
     }
@@ -229,7 +322,7 @@
         const b = document.createElement('div');
         b.className = 'basket';
         b.dataset.item = e;
-        // No basket image now — only faded target image
+        // No basket image now - only faded target image
         b.innerHTML = `
           <img src="${imagePath(e)}" 
               alt="Target ${e}" 
@@ -245,8 +338,8 @@
       b.dataset.item = 'flowers';
 
       // Main basket image
-      b.innerHTML = 
-      `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false" style="width:300px; opacity=1.0">`;
+      b.innerHTML =
+        `<img src="${basketImagePath}" alt="Basket for flowers" draggable="false" style="width:300px; opacity=1.0">`;
 
       // Add only the daily selected flowers as faded
       dailyEmojis.forEach(flower => {
@@ -254,7 +347,7 @@
         img.src = imagePath(flower);
         img.alt = flower;
         img.className = 'placed-item';
-        img.style.opacity = 0.4; // faded initially
+        img.style.opacity = 0; // not shown as preview, only where the image will load after
         img.style.position = 'absolute';
         img.style.left = `${10 + Math.random() * 15}%`;
         img.style.right = `${10 + Math.random() * 15}%`;
@@ -468,6 +561,46 @@
     document.querySelectorAll('.basket').forEach(b => {
       b.addEventListener('click', onBasketTap);
     });
+
+
+        
+    /* ===============================
+      OMIKUJI GAME LOGIC (working!)
+      =============================== */
+
+    if (gameMode === "omikuji") {
+    const omikujiWrapper = document.getElementById("omikujiWrapper");
+    const sticksTray = document.getElementById("sticksTray");
+    const fortuneMessage = document.getElementById("fortuneMessage");
+    const drawAgainBtn = document.getElementById("drawAgainBtn");
+
+    omikujiWrapper.style.display = "block";
+
+    const fortunes = [
+      "Uber Luck! ✨",
+      "Super Luck! 🌟",
+      "Lucky Day! 🍀",
+      "Good day for a good day 😄",
+      "Peaceful day 😊"
+    ];
+
+    // Create 1 stick
+    sticksTray.innerHTML = "";
+    const stick = document.createElement("button");
+    stick.textContent = "Draw Stick";
+    stick.style.fontSize = "1.2em";
+    stick.style.padding = "10px 20px";
+    sticksTray.appendChild(stick);
+
+    stick.addEventListener("click", () => {
+      // Pick a random fortune
+      const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+      fortuneMessage.textContent = `Your fortune: ${randomFortune}`;
+    });
+
+  }
+    updateGameText();
+
   </script>
 </body>
 
