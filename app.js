@@ -3,11 +3,13 @@ const path = require("path");
 const app = express();
 const PORT = 3000;
 const fs = require("fs");
+const axios = require('axios');
 
 app.use(express.json());
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
+require('dotenv').config();
 
 // Web App URL (For connecting to Google Web App )
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx-yLPCPqEGCpz5HkM3DDbTbK61E8cdTCir10eB9EGDCCpz9wVMnx4gPk96K5XYYXiTdA/exec';
@@ -19,6 +21,28 @@ const { Translate } = require('@google-cloud/translate').v2;
 // Client uses GOOGLE_APPLICATION_CREDENTIALS environment variable
 const translateClient = new Translate();
 // no file path is passed here as the environment variable does the work. 
+
+// -------------------------------
+// SERVICENOW CONFIG
+// -------------------------------
+const SN_INSTANCE = "https://dev313533.service-now.com";
+const SN_USER = process.env.snow_username;
+const SN_PASS = process.env.snow_password;
+
+// ServiceNow API caller
+async function snGet(table, query = "") {
+  const url = `${SN_INSTANCE}/api/now/table/${table}?sysparm_query=${encodeURIComponent(query)}`;
+
+  const response = await axios.get(url, {
+    auth: {
+      username: SN_USER,
+      password: SN_PASS
+    }
+  });
+
+  return response.data.result;
+}
+
 
 app.post('/api/translate', async (req, res) => {
   // Destructure the array of strings and target language code from the client's request body
@@ -56,17 +80,59 @@ app.post('/api/translate', async (req, res) => {
   }
 });
 
+// ----------------------------------------
+// GET all elderly profiles
+// Normalizes ServiceNow fields → { id, name, age, etc }
+// ----------------------------------------
+app.get('/api/caregiver/elderly', async (req, res) => {
+  try {
+    const data = await snGet("x_1855398_elderl_0_elderly_data");
+
+    const cleaned = data.map(row => ({
+      id: row.sys_id,
+      sn: row.serial_number || row.u_serial_number || "",
+      name: row.name || row.u_name || "",
+      age: row.age || row.u_age || null,
+      condition: row.condition_special_consideration || row.u_condition_special_consideration || null,
+      caregiver: row.caregiver_name || row.u_caregiver_name || ""
+
+    }));
+
+    res.json({ success: true, elderly: cleaned });
+  } catch (err) {
+    console.error("SN elderly fetch error:", err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ----------------------------------------
+// GET check-in logs (latest first)
+// Normalizes → { elderly_name, timestamp, status }
+// ----------------------------------------
+app.get('/api/caregiver/checkins', async (req, res) => {
+  try {
+    const logs = await snGet(
+      "x_1855398_elderl_0_elderly_check_in_log",
+      "ORDERBYDESCsys_created_on"
+    );
+
+    const cleaned = logs.map(row => ({
+      timestamp: row.sys_created_on,
+      elderly_name: row.elderly_name || row.name || row.u_elderly_name || "",
+      status: row.status || row.u_status || ""
+    }));
+
+    res.json({ success: true, checkins: cleaned });
+  } catch (err) {
+    console.error("SN check-in fetch error:", err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
+
 // Routes
 app.get("/", (req, res) => {
   res.render("index", { title: "Senior Support - Home" });
-});
-
-app.get("/arrange", (req, res) => {
-  res.render("arrange", { title: "Arrange Meeting" });
-});
-
-app.get("/join", (req, res) => {
-  res.render("join", { title: "Join Meeting" });
 });
 
 // Server endpoint for /checkin
@@ -105,21 +171,14 @@ app.post('/checkin', async (req, res) => {
   }
 });
 
-// GET caregiver dashboard
-app.get('/caregiver', async (req, res) => {
-  try {
-    // Fetch all check-ins from Google Apps Script
-    const response = await fetch(GAS_URL); // Assuming GAS returns JSON array of check-ins
-    const checkins = await response.json();
-
-    // Render caregiver.ejs with check-ins
-    res.render('caregiver', { checkins, title: 'Caregiver Dashboard' });
-  } catch (error) {
-    console.error('Error fetching check-ins for caregiver:', error.message);
-    // Render empty list on error
-    res.render('caregiver', { checkins: [], title: 'Caregiver Dashboard' });
-  }
+app.get("/caregiver", (req, res) => {
+  res.render("caregiver");  // loads views/caregiver.ejs
 });
+
+app.get("/exemption", (req, res) => {
+  res.render("exemption", { title: "Exemption Form" });
+});
+
 
 
 // Port

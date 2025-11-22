@@ -1,133 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Caregiver Dashboard</title>
-  <link rel="stylesheet" href="/styles.css">
+
   <style>
-    /* Container that sits on top of the background */
-    .card-container {
-      max-width: 800px;
-      margin: 50px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 25px;
+    }
+
+    #summaryCards {
+      display: flex;
+      gap: 20px;
       margin-bottom: 20px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #333;
     }
 
-    .info-section {
-      margin-bottom: 20px;
+    .card {
+      flex: 1;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: left;
     }
 
-    .info-section label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 5px;
-      color: #555;
-    }
+    .card h2 { margin: 5px 0; }
 
-    .info-section input,
-    .info-section textarea {
+    #elderlyTable {
       width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      box-sizing: border-box;
+      background: white;
+      border-radius: 10px;
+      border-collapse: collapse;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    .info-section textarea {
-      resize: vertical;
+    #elderlyTable th, #elderlyTable td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
     }
 
-    .button {
-      display: inline-block;
-      background: #4CAF50;
+    #elderlyTable th {
+      background: #002d62;
       color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      text-align: center;
-      cursor: pointer;
-      font-weight: bold;
-      border: none;
-      margin-top: 10px;
     }
 
-    .button:hover {
-      background: #45a049;
+    tr:last-child td { border-bottom: none; }
+
+    .status-ok {
+      color: green;
+      font-weight: bold;
     }
 
-    #headerText {
-      text-align: center;
-      font-size: 1.4rem;
-      margin-top: 20px;
+    .status-missed {
+      color: red;
       font-weight: bold;
+    }
+
+    #filterRow {
+      margin: 15px 0;
+      display: flex;
+      justify-content: flex-end;
     }
   </style>
 </head>
 
 <body>
-  <div id="headerText"></div>
+  <h1>Caregiver Dashboard</h1>
 
-  <div class="card-container">
-    <h1>Caregiver Dashboard</h1>
-
-    <div class="info-section">
-      <label for="residentName">Resident Name</label>
-      <input type="text" id="residentName" placeholder="Enter resident's name">
-    </div>
-
-    <div class="info-section">
-      <label for="checkinStatus">Check-in Status</label>
-      <textarea id="checkinStatus" rows="4" placeholder=""></textarea>
-    </div>
-
+  <!-- Summary Cards -->
+  <div id="summaryCards">
+    <div class="card"><h2 id="totalElderly">0</h2><p>Elderlies Under My Care</p></div>
+    <div class="card"><h2 id="checkedInToday">0</h2><p>Checked In Today</p></div>
+    <div class="card"><h2 id="missedToday">0</h2><p>Missed Today</p></div>
   </div>
 
-  <script>
-    // ======== Time-based background logic (reuse existing system) ========
-    function setTimeBasedBackground() {
-      const hour = new Date().getHours();
-      let bg, textColor = '#333', greeting;
-      if (hour >= 6 && hour < 12) {
-        bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)';
-        greeting = "Good Morning!";
-      } else if (hour >= 12 && hour < 18) {
-        bg = 'linear-gradient(to top,#ffd89b,#ffb347)';
-        greeting = "Good Afternoon!";
-      } else if (hour >= 18 && hour < 20) {
-        bg = 'linear-gradient(to top,#f6a98f,#f28e63)';
-        greeting = "Good Evening!";
-      } else {
-        bg = 'linear-gradient(to top,#2c3e50,#34495e)';
-        greeting = "Good Night!";
-        textColor = 'white';
+  <span>Caregiver:
+  <select id="caregiverSelect">
+  <option value="all">All Caregivers</option>
+  </select>
+  </span>
+  <br>
+
+  
+  <!-- Filter -->
+  <span>Senior:
+  <select id="filterSelect">
+    <option value="all">All Seniors</option>
+    <option value="checked">Checked In Today</option>
+    <option value="missed-morning">Missed (Morning)</option>
+    <option value="missed-night">Missed (Night)</option>
+  </select>
+  </span>
+
+
+  <!-- Table -->
+  <table id="elderlyTable">
+    <thead>
+      <tr>
+        <th>Serial Number</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Condition</th>
+        <th>Last Check-In</th>
+      </tr>
+    </thead>
+
+    <tbody id="elderlyBody">
+      <!-- Filled by JS -->
+    </tbody>
+  </table>
+
+<script>
+  let elderlyData = [];
+  let checkinLogs = [];
+
+  function todayDate() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);  // YYYY-MM-DD
+  }
+
+  async function load() {
+    const eRes = await fetch("/api/caregiver/elderly");
+    const cRes = await fetch("/api/caregiver/checkins");
+
+    const eData = await eRes.json();
+    const cData = await cRes.json();
+
+    elderlyData = eData.elderly || [];
+    checkinLogs = cData.checkins || [];
+
+
+    populateCaregiverFilter();
+    renderDashboard();
+  }
+
+  // --- Helper: Get today's log for one person ---
+  function getTodayStatus(logs) {
+    const today = todayDate();
+
+    // Logs already sorted newest→oldest
+    for (let log of logs) {
+      const logDate = log.timestamp || log.sys_created_on;
+
+      if (!logDate) continue;
+
+      const d = logDate.slice(0, 10);
+      if (d === today) {
+        const status = log.status.toLowerCase();
+
+        if (status.includes("checked in")) return "checked";
+        if (status.includes("missed (morning)")) return "missed-morning";
+        if (status.includes("missed (night)")) return "missed-night";
       }
-      document.body.style.background = bg;
-      document.getElementById('headerText').textContent = greeting;
-      document.getElementById('headerText').style.color = textColor;
     }
 
-    setTimeBasedBackground();
+    return "none"; // No logs today → treat as missed later
+  }
 
-    function submitCheckin() {
-      const name = document.getElementById('residentName').value;
-      const status = document.getElementById('checkinStatus').value;
+function renderDashboard() {
+  const body = document.getElementById("elderlyBody");
+  body.innerHTML = "";
 
-      // Placeholder POST request to server
-      console.log("Submitting check-in:", { name, status });
-      alert("Check-in submitted for " + name);
+  const selectedCaregiver = document.getElementById("caregiverSelect").value;
+
+  let totalCount = 0;
+  let checkedCount = 0;
+  let missedMorningCount = 0;
+  let missedNightCount = 0;
+
+  elderlyData.forEach(person => {
+
+    // Filter by caregiver
+    if (selectedCaregiver !== "all" && person.caregiver !== selectedCaregiver) {
+      return;
     }
-  </script>
+
+    totalCount++;
+
+    const logs = checkinLogs.filter(l => l.elderly_name === person.name);
+    const status = getTodayStatus(logs);
+
+    let displayText = "";
+    let cssClass = "";
+
+    if (status === "checked") {
+      displayText = "checked in";
+      cssClass = "status-ok";
+      checkedCount++;
+
+    } else if (status === "missed-morning") {
+      displayText = "missed (morning)";
+      cssClass = "status-missed";
+      missedMorningCount++;
+
+    } else if (status === "missed-night") {
+      displayText = "missed (night)";
+      cssClass = "status-missed";
+      missedNightCount++;
+
+    } else {
+      displayText = "missed (no log)";
+      cssClass = "status-missed";
+      missedMorningCount++; // default bucket
+    }
+
+    const row = `
+      <tr data-status="${status}">
+        <td>${person.sn}</td>
+        <td>${person.name}</td>
+        <td>${person.age || "-"}</td>
+        <td>${person.condition || "-"}</td>
+        <td class="${cssClass}">${displayText}</td>
+      </tr>
+    `;
+
+    body.insertAdjacentHTML("beforeend", row);
+  });
+
+  // Update Summary Cards
+  document.getElementById("totalElderly").textContent = totalCount;
+  document.getElementById("checkedInToday").textContent = checkedCount;
+  document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
+}
+  
+  function populateCaregiverFilter() {
+    const select = document.getElementById("caregiverSelect");
+
+    const caregivers = [...new Set(elderlyData.map(e => e.caregiver).filter(Boolean))];
+
+    caregivers.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
+    });
+  }
+
+  // ---------------- FILTERING ----------------
+  document.getElementById("filterSelect").addEventListener("change", e => {
+    const value = e.target.value;
+    const rows = document.querySelectorAll("#elderlyBody tr");
+
+    renderDashboard();
+
+    rows.forEach(r => {
+      const status = r.dataset.status;
+
+      if (value === "all") {
+        r.style.display = "";
+      } else if (value === "checked") {
+        r.style.display = status === "checked" ? "" : "none";
+      } else if (value === "missed-morning") {
+        r.style.display = status === "missed-morning" ? "" : "none";
+      } else if (value === "missed-night") {
+        r.style.display = status === "missed-night" ? "" : "none";
+      }
+    });
+  });
+
+  document.getElementById("caregiverSelect").addEventListener("change", () => {
+    renderDashboard();
+  });
+
+
+  load();
+</script>
+
+
 </body>
-
 </html>

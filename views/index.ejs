@@ -30,6 +30,7 @@
 
   <div id="omikujiWrapper" style="display:none;">
     <h2>Draw Your Fortune</h2>
+    <div id="2ndHeaderText"></div>
     <div id="sticksTray"></div>
     <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
   </div>
@@ -45,7 +46,6 @@
     </div>
   </div>
 
-
   <!-- Dropdown for changing the language -->
   <div class="language-selector-container">
     <label for="languageSelect" id="languageSelectLabel">Select Language:</label>
@@ -58,9 +58,15 @@
     </select>
   </div>
 
-
+  <button onclick="confirmEmergency()" style="padding: 16px 28px; background:red; color:white; font-size:20px; border-radius:8px;">
+    🚨 Emergency </button>
 
   <script>
+    function confirmEmergency() {
+    if (confirm('Are you sure you want to open an emergency ticket?')) {
+        window.open('https://dev313533.service-now.com/nav_to.do?uri=incident.do?sys_id=-1', '_blank');
+    }
+}
     // Map Database for holding content to translate
     const transText = {
       // English is the default language 
@@ -81,6 +87,7 @@
         // Puzzle extra UI 
         'puzzleTitle': "Complete the Picture",
         'drawAgain': "Draw Again",
+        'emergency': "Emergency",
 
         // Extra (message)
         'text1': "Checking in...",
@@ -119,6 +126,7 @@
 
       if (gameMode === "omikuji") {
         document.getElementById("omikujiTitle").textContent = currentContent.fortune;
+        document.getElementById("2ndHeaderText").textContent = currentContent.fortune;
         document.getElementById("drawAgainBtn").textContent = currentContent.drawAgain;
       }
     }
@@ -561,8 +569,6 @@
     document.querySelectorAll('.basket').forEach(b => {
       b.addEventListener('click', onBasketTap);
     });
-
-
         
     /* ===============================
       OMIKUJI GAME LOGIC (working!)
@@ -599,6 +605,8 @@
     });
 
   }
+
+  
     updateGameText();
 
   </script>
