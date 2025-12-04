@@ -52,9 +52,9 @@
     <select id="languageSelect" onchange="handleLanguageChange(this.value)">
       <!-- get the value (lang code) of chosen language-->
       <option value="en" selected>English</option>
-      <option value="zh">Chinese (Mandarin)</option>
-      <option value="ms">Malay</option>
-      <option value="ta">Tamil</option>
+      <option value="zh">中文</option>
+      <option value="ms">Bahasa Melayu</option>
+      <option value="ta">தமிழ்</option>
     </select>
   </div>
 
@@ -463,7 +463,7 @@
           fetch("/checkin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: "Haniz Binte Omar", status: "checked in" })
+            body: JSON.stringify({ name: "Elderly User", status: "checked in" })
           })
             .then(r => r.json())
             .then(() => { messageEl.textContent = content.text2; })

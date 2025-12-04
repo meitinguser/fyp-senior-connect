@@ -1,82 +1,98 @@
 <%- include('partials/htmlheader.ejs') %>
-    <link rel="stylesheet" href="/exemption.css" />
+
+<link rel="stylesheet" href="/styles.css" />
+
+<div id="exemptionFormContainer"
+    style="max-width:400px; margin:auto; padding:20px; border:1px solid #ccc; border-radius:10px;">
+    <h2>Elderly Check In Management</h2>
+
+<label>
+    Elderly Name:
+    <input type="text" id="elderName" placeholder="Enter full name" required>
+</label>
+<br><br>
+
+<label>
+    Check-In:
+    <select id="isExempt">
+        <option value="TRUE">PAUSE</option>
+        <option value="FALSE">RESUME</option>
+    </select>
+</label>
+<br><br>
+
+<label>
+    Reason:
+    <input type="text" id="reason" placeholder="e.g., Overseas">
+</label>
+<br><br>
+
+<label>
+    Start Date:
+    <input type="date" id="startDate">
+</label>
+<br><br>
+
+<label>
+    End Date:
+    <input type="date" id="endDate">
+</label>
+<br><br>
+
+<button id="submitExemption">Submit</button>
+<p id="exemptionMessage"></p>
 
 
-    <!-- HTML: Caregiver Exemption Form -->
-    <div id="exemptionFormContainer"
-        style="max-width:400px; margin:auto; padding:20px; border:1px solid #ccc; border-radius:10px;">
-        <h2>Caregiver Exemption Form</h2>
-        <label>
-            Elderly Name:
-            <input type="text" id="elderName" placeholder="Enter full name" required>
-        </label>
-        <br><br>
-        <label>
-            Exempt from Check-In:
-            <select id="isExempt">
-                <option value="TRUE">TRUE</option>
-                <option value="FALSE">FALSE</option>
-            </select>
-        </label>
-        <br><br>
-        <label>
-            Reason:
-            <input type="text" id="reason" placeholder="e.g., Overseas">
-        </label>
-        <br><br>
-        <label>
-            Start Date:
-            <input type="date" id="startDate">
-        </label>
-        <br><br>
-        <label>
-            End Date:
-            <input type="date" id="endDate">
-        </label>
-        <br><br>
-        <button id="submitExemption">Submit</button>
-        <p id="exemptionMessage"></p>
-    </div>
+</div>
 
-    <script>
-        document.getElementById('submitExemption').addEventListener('click', async () => {
-            const elderName = document.getElementById('elderName').value.trim();
-            const isExempt = document.getElementById('isExempt').value;
-            const reason = document.getElementById('reason').value.trim();
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const msgEl = document.getElementById('exemptionMessage');
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzC1cFq0qUsDzxltIpvR0qeJ431yvd9q3MV5h0HYr4o/dev';
 
-            if (!elderName) {
-                msgEl.style.color = 'red';
-                msgEl.textContent = "Please enter an elderly's name.";
-                return;
-            }
+document.getElementById('submitExemption').addEventListener('click', async () => {
+    const elderName = document.getElementById('elderName').value.trim();
+    const isExempt = document.getElementById('isExempt').value;
+    const reason = document.getElementById('reason').value.trim();
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const msgEl = document.getElementById('exemptionMessage');
 
-            msgEl.style.color = 'black';
-            msgEl.textContent = "Submitting...";
+    // Simple validation
+    if (!elderName) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = "Please enter the elderly's name.";
+        return;
+    }
 
-            try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbzC1cFq0qUsDzxltIpvR0qeJ431yvd9q3MV5h0HYr4o/dev?action=exemption', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: elderName, isExempt, reason, startDate, endDate })
-                });
+    msgEl.style.color = 'black';
+    msgEl.textContent = "Submitting...";
 
-                // Expect JSON response
-                const data = await response.json();
-
-                if (data.result === 'success') {
-                    msgEl.style.color = 'green';
-                    msgEl.textContent = data.message;
-                } else {
-                    msgEl.style.color = 'red';
-                    msgEl.textContent = data.message;
-                }
-            } catch (err) {
-                msgEl.style.color = 'red';
-                msgEl.textContent = 'Error: ' + err.message;
-            }
+    try {
+        const response = await fetch(GAS_URL + '?action=exemption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: elderName, isExempt, reason, startDate, endDate })
         });
-    </script>
-    <%- include('partials/htmlfooter.ejs') %>
+
+
+
+        if (!response.ok) throw new Error('Network response was not OK');
+
+        const data = await response.json();
+
+        if (data.result === 'success') {
+            msgEl.style.color = 'green';
+            msgEl.textContent = data.message;
+        } else {
+            msgEl.style.color = 'red';
+            msgEl.textContent = data.message || 'Failed to submit exemption.';
+        }
+
+    } catch (err) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'Error: ' + err.message;
+        console.error('Exemption submit error:', err);
+    }
+});
+</script>
+
+<%- include('partials/htmlfooter.ejs') %>

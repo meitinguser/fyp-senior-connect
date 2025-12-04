@@ -171,12 +171,68 @@ app.post('/checkin', async (req, res) => {
   }
 });
 
+// ----------------------------------------
+// POST /exemption  → forward exemption request to Google Apps Script
+// ----------------------------------------
+app.post('/api/exemption', async (req, res) => {
+  const { name, isExempt, reason, startDate, endDate } = req.body;
+
+  if (!name) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing elderly name."
+    });
+  }
+
+  const payload = { name, isExempt, reason, startDate, endDate };
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const gasResult = await response.json();
+
+    res.json({
+      success: true,
+      message: "Exemption forwarded to Google Apps Script.",
+      gas_response: gasResult
+    });
+
+  } catch (err) {
+    console.error("Exemption forwarding error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update exemption via GAS.",
+      error: err.message
+    });
+  }
+});
+
+
+app.post('/api/exemption', async (req, res) => {
+  try {
+    const response = await fetch(GAS_URL + '?action=exemption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ result: 'error', message: err.message });
+  }
+});
+
+
 app.get("/caregiver", (req, res) => {
   res.render("caregiver");  // loads views/caregiver.ejs
 });
 
-app.get("/exemption", (req, res) => {
-  res.render("exemption", { title: "Exemption Form" });
+app.get("/manage", (req, res) => {
+  res.render("exemption", { title: "Elderly Check In Management" });
 });
 
 
