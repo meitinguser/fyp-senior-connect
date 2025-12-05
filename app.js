@@ -137,39 +137,49 @@ app.get("/", (req, res) => {
 
 // Server endpoint for /checkin
 app.post('/checkin', async (req, res) => {
-  // Data received from the client (browser)
   const { name, status } = req.body;
 
-  // Data to be forwarded to Google Apps Script
-  const dataToSend = { name, status };
+  if (!name || !status) {
+    return res.status(400).json({ error: 'Missing name or status.' });
+  }
 
   try {
-    // Forward the request to Google Apps Script (Server-to-Server)
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(dataToSend)
-    });
+    // Prepare payload for ServiceNow
+    const payload = {
+      elderly_name: name, // could be replaced with elderlyId for better tracking
+      status: status,
+      sys_created_on: new Date().toISOString() // optional, SN may auto-create
+      // Add other fields if needed
+    };
 
-    // Parse the final response from Apps Script 
-    const result = await response.json();
+    // POST directly to SN table
+    const snResponse = await axios.post(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      payload,
+      {
+        auth: {
+          username: SN_USER,
+          password: SN_PASS
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-    // Send the Apps Script result back to the client (Browser)
     res.status(200).json({
-      message: 'Check-in recorded via server.',
-      gas_response: result
+      message: 'Check-in recorded via ServiceNow.',
+      sn_response: snResponse.data
     });
-
   } catch (error) {
-    console.error('Error forwarding request to GAS:', error.message);
+    console.error('Error posting to ServiceNow:', error.message);
     res.status(500).json({
-      error: 'Failed to connect to Google Sheets service.',
+      error: 'Failed to push check-in to ServiceNow.',
       details: error.message
     });
   }
 });
+
 
 // ----------------------------------------
 // POST /exemption  → forward exemption request to Google Apps Script
@@ -213,18 +223,32 @@ app.post('/api/exemption', async (req, res) => {
 
 
 app.post('/api/exemption', async (req, res) => {
+  const { elderlyId, isExempt, reason, startDate, endDate } = req.body;
+
+  if (!elderlyId) return res.status(400).json({ success: false, message: "Missing elderlyId." });
+
   try {
-    const response = await fetch(GAS_URL + '?action=exemption', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
+    const url = `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderlyId}`;
+    
+    const payload = {
+      u_is_exempt: isExempt,
+      u_exemption_reason: reason || '',
+      u_exemption_start: startDate || '',
+      u_exemption_end: endDate || ''
+    };
+
+    const response = await axios.patch(url, payload, {
+      auth: { username: SN_USER, password: SN_PASS }
     });
-    const data = await response.json();
-    res.json(data);
+
+    res.json({ success: true, message: "Exemption updated.", data: response.data.result });
   } catch (err) {
-    res.status(500).json({ result: 'error', message: err.message });
+    console.error("Exemption update error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
+
+
 
 
 app.get("/caregiver", (req, res) => {
