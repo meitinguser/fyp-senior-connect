@@ -1,74 +1,82 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  if (typeof gameMode === "undefined" || gameMode !== "puzzle") return;
+	const elderlyId = getCookie("elderlyId");
+	const elderlyName = getCookie("elderlyName");
+	if (!elderlyId || !elderlyName) return; // cannot check in without cookies
 
-  const wrapper = document.getElementById("puzzleWrapper");
-  wrapper.style.display = "block";
+	const wrapper = document.getElementById("puzzleWrapper");
+	if (!wrapper) return;
 
-  const pieces = Array.from(document.querySelectorAll(".puzzle-piece"));
+	// Hide puzzle unless it's the current game
+	wrapper.style.display = (gameMode === "puzzle") ? "block" : "none";
 
-  /* ===== Choose puzzle image ===== */
-  const puzzleImage = "/images/puzzle_bunny.jpg";
+	const pieces = Array.from(document.querySelectorAll(".puzzle-piece"));
+	const puzzleImage = "/images/puzzle_bunny.jpg";
+	const correctPositions = ["0% 0%", "100% 0%", "0% 100%", "100% 100%"];
 
-  /* ===== Assign correct background positions ===== */
-  const correctPositions = [
-    "0% 0%",     /* top left */
-    "100% 0%",   /* top right */
-    "0% 100%",   /* bottom left */
-    "100% 100%"  /* bottom right */
-  ];
+	pieces.forEach((piece, i) => {
+		piece.dataset.correct = correctPositions[i];
+		piece.style.backgroundImage = `url('${puzzleImage}')`;
+	});
 
-  pieces.forEach((piece, i) => {
-    piece.dataset.correct = correctPositions[i];
-    piece.style.backgroundImage = `url('${puzzleImage}')`;
-  });
+	if (gameMode !== "puzzle") return; // only init drag/drop if puzzle is active
 
-  /* ===== Shuffle ===== */
-  shufflePieces();
+	shufflePieces();
 
-  function shufflePieces() {
-    const shuffled = [...correctPositions].sort(() => Math.random() - 0.5);
-    pieces.forEach((p, i) => p.style.backgroundPosition = shuffled[i]);
-  }
+	function shufflePieces() {
+		const shuffled = [...correctPositions].sort(() => Math.random() - 0.5);
+		pieces.forEach((p, i) => p.style.backgroundPosition = shuffled[i]);
+	}
 
-  /* ===== Drag to Swap ===== */
-  let dragged = null;
+	let dragged = null;
 
-  pieces.forEach(piece => {
-    piece.draggable = true;
+	pieces.forEach(piece => {
+		piece.draggable = true;
+		piece.addEventListener("dragstart", () => {
+			dragged = piece;
+		});
+		piece.addEventListener("dragover", e => e.preventDefault());
+		piece.addEventListener("drop", () => {
+			if (!dragged || dragged === piece) return;
+			const temp = piece.style.backgroundPosition;
+			piece.style.backgroundPosition = dragged.style.backgroundPosition;
+			dragged.style.backgroundPosition = temp;
+			checkSolved();
+		});
+	});
 
-    piece.addEventListener("dragstart", () => {
-      dragged = piece;
-    });
+	function checkSolved() {
+		const solved = pieces.every(p => p.style.backgroundPosition === p.dataset.correct);
+		if (!solved) return;
 
-    piece.addEventListener("dragover", e => e.preventDefault());
+		pieces.forEach(p => p.classList.add("piece-correct"));
 
-    piece.addEventListener("drop", () => {
-      if (!dragged || dragged === piece) return;
+		const payload = {
+			elderlyId,
+			elderlyName,
+			status: "Checked In"
+		};
 
-      const temp = piece.style.backgroundPosition;
-      piece.style.backgroundPosition = dragged.style.backgroundPosition;
-      dragged.style.backgroundPosition = temp;
-
-      checkSolved();
-    });
-  });
-
-  /* ===== Check If Solved ===== */
-  function checkSolved() {
-    const solved = pieces.every(p =>
-      p.style.backgroundPosition === p.dataset.correct
-    );
-
-    if (solved) {
-      pieces.forEach(p => p.classList.add("piece-correct"));
-
-      fetch('/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: "Elderly User", status: "checked in" })
-      });
-    }
-  }
+		setTimeout(() => {
+			fetch("/checkin", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify(payload)
+				})
+				.then(r => r.json())
+				.then(data => {
+					console.log("Puzzle check-in response:", data);
+					const messageEl = document.getElementById("message");
+					if (messageEl) messageEl.textContent = "Check-in recorded successfully! 💛";
+				})
+				.catch(err => {
+					console.error("Puzzle check-in error:", err);
+					const messageEl = document.getElementById("message");
+					if (messageEl) messageEl.textContent = "Couldn't connect. Try again later 🙏";
+				});
+		}, 400);
+	}
 
 });

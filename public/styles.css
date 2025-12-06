@@ -289,3 +289,20 @@ body {
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
 }
+
+#sticksTray {
+  display: flex;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 20px;
+  align-items: center;
+}
+
+.omikuji-stick {
+  background: #fff8dc;
+  border: 2px solid #c79a3c;
+  padding: 10px;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: bold;
+}
