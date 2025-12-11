@@ -1,23 +1,23 @@
-/* ========= Elderly Sorting Game ========== */
-
+/* ========= Elderly Sorting Games ========== */
 /* The CSS :root pseudo-class matches the document's root element. */
 /* In HTML, the root element is always the <html> element. */
 /* custom properties, reusable values */
 
 /* Root variables for basket and emoji sizes */
 :root {
-  --basket-size: 140px; /* bigger basket */
-  --item-size: 72px;    /* tray items same size */
+  --basket-size: 140px;
+  /* bigger basket */
+  --item-size: 72px;
+  /* tray items same size */
 }
-
 
 html,
 body {
+  font-family: 'Lato', sans-serif;
   height: 100%;
   /* Fully use viewport */
   margin: 0;
   /* Eliminate default browser margins */
-  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;
   /* Set a consistent font*/
 
   /* Anti-aliasing = smooth edges */
@@ -27,6 +27,8 @@ body {
 
   /* Disable tap highlight color on mobile browsers for a cleaner look */
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+
 
 }
 
@@ -290,14 +292,6 @@ body {
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
 }
 
-#sticksTray {
-  display: flex;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  padding: 20px;
-  align-items: center;
-}
-
 .omikuji-stick {
   background: #fff8dc;
   border: 2px solid #c79a3c;
@@ -305,4 +299,38 @@ body {
   text-align: center;
   border-radius: 6px;
   font-weight: bold;
+}
+
+.omikujiWrapper {
+  display: flex;
+  justify-content: center;
+  /* Centers horizontally */
+  align-items: center;
+  /* Centers vertically */
+  height: 100vh;
+  color: white;
+}
+
+#drawStickBtn {
+
+  font-size: large;
+  font-weight: 600;
+  color: #f5b041;
+  background-size: contain;
+  /* show full image */
+    background-position: center;
+  background-size: cover; /* Adjust as needed */
+  background-repeat: no-repeat;
+
+
+  background-color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.fortuneMessage {
+  display: block;
+  flex-direction: column;
+  align-items: center;
 }

@@ -77,6 +77,7 @@ let gameMode = null;
 const allGames = ["sorting", "flowers", "puzzle", "omikuji"];
 gameMode = allGames[Math.floor(Math.random() * allGames.length)];
 
+
 const allItems = ["whitelily", "pinkflower", "blueflower", "rose", "maroonchrysanthemum"];
 const datasets = {
     berries: ["strawberry", "blueberry", "cherry-tomato"],
@@ -246,7 +247,7 @@ function initDragAndDrop() {
         activeSource = null,
         selectedForTap = null,
         matched = 0,
-        totalNeeded = trayEl.children.length;
+        totalNeeded = 1;
 
     function basketAtPoint(x, y) {
         const el = document.elementFromPoint(x, y);
@@ -409,21 +410,20 @@ function initDragAndDrop() {
 }
 
 // ------------------ OMIKUJI ------------------
+
+sticksimagepath = "images/fortune cup.png"
 function initOmikuji() {
     if (gameMode !== "omikuji") return;
     omikujiWrapper.style.display = "block";
     const sticksTray = document.getElementById("sticksTray");
     const fortuneMessage = document.getElementById("fortuneMessage");
-    sticksTray.innerHTML = "";
+    sticksTray.innerHTML = `<img src="${sticksimagepath}`;
 
     let stickBtn = document.getElementById("drawStickBtn");
     if (!stickBtn) {
         stickBtn = document.createElement("button");
         stickBtn.id = "drawStickBtn";
-        stickBtn.textContent = "Draw Stick";
-        stickBtn.style.fontSize = "1.2em";
-        stickBtn.style.padding = "10px 20px";
-        sticksTray.appendChild(stickBtn);
+        sticksTray = stickBtn;
     }
 
     const fortunes = ["Uber Luck! ✨", "Super Luck! 🌟", "Lucky Day! 🍀", "Good day for a good day 😄", "Peaceful day 😊"];

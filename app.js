@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORTnumber || 3000;
 
 // ------------------ MIDDLEWARE ------------------
 app.use(express.json());
@@ -137,6 +137,55 @@ app.post("/api/translate", async (req, res) => {
   } catch (err) {
     console.error("Translation error:", err.message);
     res.status(500).json({ error: "Translation failed", details: err.message });
+  }
+});
+
+// ----------------------------------------
+// GET all elderly profiles
+// Normalizes ServiceNow fields → { id, name, age, etc }
+// ----------------------------------------
+app.get('/api/caregiver/elderly', async (req, res) => {
+  try {
+    const data = await snGet("x_1855398_elderl_0_elderly_data");
+
+    const cleaned = data.map(row => ({
+      id: row.sys_id,
+      sn: row.serial_number || row.u_serial_number || "",
+      name: row.name || row.u_name || "",
+      age: row.age || row.u_age || null,
+      condition: row.condition_special_consideration || row.u_condition_special_consideration || null,
+      caregiver: row.caregiver_name || row.u_caregiver_name || ""
+
+    }));
+
+    res.json({ success: true, elderly: cleaned });
+  } catch (err) {
+    console.error("SN elderly fetch error:", err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ----------------------------------------
+// GET check-in logs (latest first)
+// Normalizes → { elderly_name, timestamp, status }
+// ----------------------------------------
+app.get('/api/caregiver/checkins', async (req, res) => {
+  try {
+    const logs = await snGet(
+      "x_1855398_elderl_0_elderly_check_in_log",
+      "ORDERBYDESCsys_created_on"
+    );
+
+    const cleaned = logs.map(row => ({
+      timestamp: row.sys_created_on,
+      elderly_name: row.elderly_name || row.name || row.u_elderly_name || "",
+      status: row.status || row.u_status || ""
+    }));
+
+    res.json({ success: true, checkins: cleaned });
+  } catch (err) {
+    console.error("SN check-in fetch error:", err.message);
+    res.status(500).json({ success: false });
   }
 });
 

@@ -5,20 +5,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Senior Connect - Daily Picture Check-In</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <%- include('partials/fonts.ejs') %>
 
-  <!-- Only load omikuji and puzzle if needed -->
-  <link rel="stylesheet" href="/puzzle.css">
-  <script defer src="/puzzle.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <!-- Only load omikuji and puzzle if needed -->
+    <link rel="stylesheet" href="/puzzle.css">
+    <script defer src="/puzzle.js"></script>
 
 </head>
 
 <body>
 
   <!-- NAVBAR -->
-  <nav id="navbar" style="display:flex; justify-content:center; padding:10px; background:#eee;">
+  <nav id="navbar" style="justify-content:center; padding:10px; background:#eee;">
     <div>
-      <span>Senior Connect 
+      <span>Senior Connect
         <button id="enterIdBtn"></button>
       </span>
     </div>
@@ -37,11 +38,11 @@
   <!-- FORTUNE GAME (HIDDEN UNTIL gameMode === 'omikuji') -->
 
   <div id="omikujiWrapper" style="display:none;">
-    <h2>Draw Your Fortune</h2>
     <div id="2ndHeaderText"></div>
     <div id="sticksTray"></div>
-    <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
+    <button id="drawStickBtn">Get Today's Fortune!</button>
   </div>
+  <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
 
   <!-- PUZZLE GAME (HIDDEN UNTIL gameMode === 'puzzle') -->
   <div id="puzzleWrapper" style="display:none;">
