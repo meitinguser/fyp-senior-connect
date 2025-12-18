@@ -31,3 +31,8 @@ For Google Translation API:
 
 copy the path to the json file
 > $env:GOOGLE_APPLICATION_CREDENTIALS="path/to/keys-file.json" 
+
+
+
+# __Update Log__
+

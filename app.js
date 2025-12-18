@@ -89,7 +89,7 @@ app.post("/checkin", async (req, res) => {
       name: elderlyName,             // caregiver/user
       status: status,                // e.g., "Checked In"
       timestamp: getSingaporeTimestamp(),
-      u_elderly_name: elderlySysId   // reference to elderly record
+      u_elderly: elderlySysId   // reference to elderly record
     };
 
     const snResponse = await axios.post(
@@ -178,7 +178,7 @@ app.get('/api/caregiver/checkins', async (req, res) => {
 
     const cleaned = logs.map(row => ({
       timestamp: row.sys_created_on,
-      elderly_name: row.elderly_name || row.name || row.u_elderly_name || "",
+      elderly_name: row.elderly_name || row.name || row.u_elderly || "",
       status: row.status || row.u_status || ""
     }));
 
