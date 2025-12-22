@@ -108,10 +108,11 @@
     <thead>
       <tr>
         <th>Serial Number</th>
+        <th>Username</th>
         <th>Name</th>
-        <th>Age</th>
         <th>Condition</th>
         <th>Last Check-In</th>
+
       </tr>
     </thead>
 
@@ -217,8 +218,8 @@ function renderDashboard() {
     const row = `
       <tr data-status="${status}">
         <td>${person.sn}</td>
+        <td>${person.elderly_username}</td>
         <td>${person.name}</td>
-        <td>${person.age || "-"}</td>
         <td>${person.condition || "-"}</td>
         <td class="${cssClass}">${displayText}</td>
       </tr>

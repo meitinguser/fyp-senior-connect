@@ -9,20 +9,16 @@
 
     <link rel="stylesheet" href="/styles.css">
     <!-- Only load omikuji and puzzle if needed -->
-    <link rel="stylesheet" href="/puzzle.css">
-    <script defer src="/puzzle.js"></script>
 
 </head>
 
 <body>
-
   <!-- NAVBAR -->
   <nav id="navbar" style="justify-content:center; padding:10px; background:#eee;">
-    <div>
-      <span>Senior Connect
-        <button id="enterIdBtn"></button>
-      </span>
-    </div>
+  <div>
+      <span>Senior Connect - </span>
+        <a href="/profile"><img src="images/profile.png" style="width:20px;  height:20px;"></a>
+      </div>
   </nav>
 
   <div id="headerText"></div> <!-- Top text, changes based on the time of day-->
@@ -53,18 +49,6 @@
       <div class="puzzle-piece"></div>
       <div class="puzzle-piece"></div>
     </div>
-  </div>
-
-  <!-- Dropdown for changing the language -->
-  <div class="language-selector-container">
-    <label for="languageSelect" id="languageSelectLabel">Select Language:</label>
-    <select id="languageSelect" onchange="handleLanguageChange(this.value)">
-      <!-- get the value (lang code) of chosen language-->
-      <option value="en" selected>English</option>
-      <option value="zh">中文</option>
-      <option value="ms">Bahasa Melayu</option>
-      <option value="ta">தமிழ்</option>
-    </select>
   </div>
 
   <button onclick="confirmEmergency()"

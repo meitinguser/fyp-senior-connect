@@ -1,3 +1,5 @@
+# !! DO NOT RUN NPM INIT !!
+
 # FYP
 
 Senior Connect: Building a Support Network for Elderly Living Alone (Process Workflows and Operational Procedures)
@@ -9,8 +11,8 @@ cd fyp-senior-connect
 
 ⚠️ Important: Due to the __.gitignore__ file, the __node_modules/__ folder is **not** included in the repository. The app will not work instantly after cloning.
 
-**2. Install dependencies**\
-__!!! DO NOT run npm init.__\
+**2. Install dependencies**
+# !! DO NOT run npm init. !!
 Instead, install all necessary packages listed in package.json:
 
 > npm install
@@ -34,5 +36,17 @@ copy the path to the json file
 
 
 
-# __Update Log__
+# Update Log
+22/12/2025 Commit [mei ting]
+- Added profile.ejs page
+- Changed Login/Profile Popup to seperate page (profile.ejs).
+
+- Implemented proper profile login system
+- Implemented password hash check
+- Added passport.js, passport-local, express-session and bcrypt packages for password system.
+- Adjusted cookies.
+- Added functions to get Elderly by Username and Sys_id (not by serial number anymore)
+
+- Edited caregiver.ejs columns to include username to better suit new username/password system
+- Moved puzzle.js and puzzle.css logic into main files (index.ejs, styles.css)
 

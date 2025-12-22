@@ -5,11 +5,18 @@
 
 /* Root variables for basket and emoji sizes */
 :root {
-  --basket-size: 140px;
-  /* bigger basket */
-  --item-size: 72px;
-  /* tray items same size */
+  --basket-size: 150px;
+  --item-size: 76px;
+
+  --primary: #f5b041;
+  --secondary: #f6c67a;
+  --soft-bg: #fffdf6;
+  --tray-bg: #fffbe6;
+  --border-soft: #e6cfa0;
+  --text-main: #333;
 }
+
+/* ---------- BASE ---------- */
 
 html,
 body {
@@ -20,16 +27,13 @@ body {
   /* Eliminate default browser margins */
   /* Set a consistent font*/
 
-  /* Anti-aliasing = smooth edges */
+  /* Anti-aliasing = smooth edges */  
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Same thing as above but for macOS */
+   /* Same thing as above but for macOS */
 
   /* Disable tap highlight color on mobile browsers for a cleaner look */
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-
-
-
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -39,12 +43,10 @@ body {
   /* Stack elements vertically */
   align-items: center;
   /* Center elements horizontally */
-  justify-content: space-between;
+  justify-content: space-evenly;
   /* Evenly space elements top to bottom */
   min-height: 100vh;
   /* Fill full viewport height */
-
-  padding: 12px;
   /* Add spacing */
   box-sizing: border-box;
   /* Include padding and border in total size */
@@ -57,48 +59,48 @@ body {
   /* Smooth background color changes */
 }
 
+/* ---------- HEADERS ---------- */
 
 #headerText {
-  margin: 6px 0 6px 0;
-  /* Margins on the top and bottom, none on left/right */
-  font-size: 1.50rem;
-  /* Header default font size*/
+  margin: 8px 0;
+  /* Margins */
+
+  font-size: 1.6rem;
+  font-weight: 700;
   text-align: center;
-  /* Align header text in middle */
 }
+
+/* ---------- GAME AREA ---------- */
 
 #gameArea {
   /* Full width but limited on large screens for better usability */
   width: 100%;
-  max-width: 800px;
-
+  max-width: 820px;
   flex: 1 1 auto;
   /* Flexible height that grows or shrinks with screen size */
 
   /* Stack baskets and emojis vertically */
   display: flex;
   flex-direction: column;
-
   /* Center items horizontally and distribute them evenly vertically */
   align-items: center;
   justify-content: space-evenly;
-
+  
   /* Space between baskets and padding so content doesn’t touch edges */
-  gap: 12px;
-  padding: 8px 0;
-
+  gap: 14px;
+  padding: 10px 0;
   box-sizing: border-box;
   /* Include padding and borders in total size */
-
 }
+
+/* ---------- BASKETS ---------- */
 
 .baskets {
   width: 100%;
   display: flex;
   justify-content: space-around;
-  /* spread basets evenly */
-  gap: 12px;
-  padding: 3px 3px;
+  gap: 14px;
+  padding: 6px;
   box-sizing: border-box;
 }
 
@@ -108,10 +110,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 18px;
-  background: none;
-  box-shadow: none;
+  border-radius: 22px;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.1),
+    inset 0 -4px 12px rgba(76, 12, 12, 0);
   position: relative;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
@@ -120,28 +122,28 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 1.0;
-  /* Faded until filled */
+  opacity: 1;
   transition: opacity 220ms ease, transform 220ms ease;
   pointer-events: none;
 }
 
 .basket.filled img {
   opacity: 1;
-  /* Fully visible when matched */
 }
 
 .basket.active {
-  transform: scale(1.08);
-  box-shadow: 0 10px 18px rgba(39, 174, 96, 0.35);
+  transform: scale(1.1);
+  box-shadow:
+    0 14px 28px rgba(39, 174, 96, 0.35),
+    inset 0 -4px 8px rgba(255, 255, 255, 0.6);
 }
 
 .basket .placed-item {
   position: absolute;
   width: 80%;
   height: 80%;
-  top: 20%;
-  left: 20%;
+  top: 10%;
+  left: 10%;
   opacity: 0;
   transition: opacity 300ms ease;
 }
@@ -150,21 +152,25 @@ body {
   opacity: 1;
 }
 
+/* ---------- TRAY ---------- */
+
 #tray {
-  width: 94%;
-  max-width: 520px;
-  background: #fffbe6;
-  border-radius: 16px;
-  border: 2px solid #f6c67a;
-  padding: 10px;
+  width: 96%;
+  max-width: 540px;
+  background: var(--tray-bg);
+  border-radius: 20px;
+  border: 2px solid var(--border-soft);
+  padding: 14px;
   display: flex;
-  gap: 12px;
+  gap: 14px;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
 }
+
+/* ---------- ITEMS ---------- */
 
 .item {
   width: var(--item-size);
@@ -172,87 +178,59 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border-radius: 12px;
-  border: 2px solid #f5b041;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.09);
+  border-radius: 16px;
+  border: 2px solid var(--primary);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
   cursor: grab;
-  transition: transform 120ms ease, opacity 120ms;
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 120ms;
 }
 
 .item img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 0.9;
-  transition: opacity 0.2s;
+  opacity: 0.95;
   pointer-events: none;
 }
 
 .item.dragging {
-  opacity: 0.95;
-  transform: scale(1.08);
+  transform: scale(1.12);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
   cursor: grabbing;
 }
 
 .item.selected {
   border-color: gold;
-  transform: scale(1.05);
+  transform: scale(1.07);
 }
 
-.item.dragging img {
-  opacity: 1;
-}
-
+/* ---------- MESSAGE ---------- */
 
 #message {
-  min-height: 24px;
-  margin-top: 6px;
-  font-size: 1.05rem;
-  color: #333;
+  min-height: 26px;
+  margin-top: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
   text-align: center;
 }
 
-@media (max-width:460px) {
-  :root {
-    --basket-size: 110px;
-    --item-size: 64px;
-  }
-
-  .basket {
-    font-size: 1.5rem;
-  }
-
-  .item {
-    font-size: 1.5rem;
-  }
-
-  #headerText {
-    font-size: 1.05rem;
-  }
-}
-
+/* ---------- LANGUAGE SELECT ---------- */
 /* =========== Language selection dropdown list =========== */
 
-/* For center and padding */
 .language-selector-container {
-  margin: 20px auto;
-  max-width: 400px;
-
-  /* Limits width on large screens */
+  margin: 18px auto;
+  max-width: 420px;
   padding: 10px;
-
 }
 
 /* For label text large anc clear */
 .language-selector-container label {
-  display: block;
-
-  /* Ensures label takes its own line */
   margin-bottom: 8px;
   font-size: 1.1em;
-  font-weight: bold;
+  font-weight: 700;
 }
+
 
 /* Target the actual dropdown element */
 #languageSelect {
@@ -268,69 +246,86 @@ body {
   border: 2px solid #3498db;
   /* Clear border */
   border-radius: 8px;
-  /* Rounded corners */
-  -webkit-appearance: none;
-  /* Removes default iOS styling for better control */
-  -moz-appearance: none;
-  /* Removes default Firefox styling */
-  appearance: none;
   background-color: #f7f7f7;
-
-  /* Add a custom down arrow */
-  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a12.7%2012.7%200%200%200-18%200L146.2%20192.9%2023.4%2069.4a12.7%2012.7%200%200%200-18%2018l131%20131.5a12.7%2012.7%200%200%200%2018%200l131.5-131.5a12.7%2012.7%200%200%200%200-18z%22%2F%3E%3C%2Fsvg%3E');
-  background-repeat: no-repeat;
-  background-position: right 10px top 50%;
-  background-size: 15px 15px;
+  appearance: none;
 }
 
-
-
-/* Ensure focus state is clear for accessibility */
 #languageSelect:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.4);
 }
 
-.omikuji-stick {
-  background: #fff8dc;
-  border: 2px solid #c79a3c;
-  padding: 10px;
-  text-align: center;
-  border-radius: 6px;
-  font-weight: bold;
+/* ---------- PUZZLE ---------- */
+/* Puzzle wrapper is a perfect square */
+#puzzleWrapper {
+  width: min(90vw, 300px);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  display: none;
+  margin-bottom: 10px;     /* consistent spacing */
 }
+
+#puzzleTitle {
+  text-align: center;
+  color: white;
+}
+
+#puzzleGrid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  
+}
+.puzzle-piece {
+  background-size: 200% 200%; /* because 2×2 = 100%/2 = 50% per piece */
+  background-repeat: no-repeat;
+  cursor: grab;
+  transition: transform .15s ease;
+}
+
+.puzzle-piece:active {
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.piece-correct {
+  outline: 3px solid #4caf50;
+}
+
+/* ---------- OMIKUJI ---------- */
 
 .omikujiWrapper {
   display: flex;
   justify-content: center;
-  /* Centers horizontally */
   align-items: center;
-  /* Centers vertically */
   height: 100vh;
   color: white;
 }
 
 #drawStickBtn {
-
-  font-size: large;
-  font-weight: 600;
-  color: #f5b041;
-  background-size: contain;
-  /* show full image */
-    background-position: center;
-  background-size: cover; /* Adjust as needed */
-  background-repeat: no-repeat;
-
-
-  background-color: white;
-  padding: 10px;
-  border: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #c97a00;
+  background-color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 14px;
   cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-.fortuneMessage {
-  display: block;
-  flex-direction: column;
-  align-items: center;
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 460px) {
+  :root {
+    --basket-size: 120px;
+    --item-size: 66px;
+  }
+
+  #headerText {
+    font-size: 1.2rem;
+  }
 }
+

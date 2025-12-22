@@ -1,0 +1,108 @@
+/* ========== PROFILE / LOGIN SCREEN ========== */
+html {
+      font-family: 'Lato', sans-serif;
+}
+#loginModal {
+  width: 100%;
+  max-width: 380px;
+  margin: 60px auto;
+  padding: 24px 20px;
+  background: #eeeeee;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* Title */
+#loginModal h2 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  color: #333;
+}
+
+/* Inputs */
+#loginModal input {
+  width: 100%;
+  height: 52px;
+  font-size: 1.05rem;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#loginModal input:focus {
+  outline: none;
+  border-color: #f5b041;
+  box-shadow: 0 0 0 3px rgba(245, 176, 65, 0.35);
+}
+
+/* Login Button */
+#loginSubmit {
+  width: 100%;
+  height: 54px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #f7b733, #f5af19);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+#loginSubmit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+#loginSubmit:active {
+  transform: scale(0.98);
+}
+
+/* Back Link */
+#loginModal .button,
+#loginModal a {
+  display: block;
+  margin-top: 16px;
+  font-size: 1rem;
+  text-decoration: none;
+  color: #3498db;
+  font-weight: 600;
+}
+
+#loginModal a:hover {
+  text-decoration: underline;
+}
+
+/* Language Selector */
+#loginModal .language-selector-container {
+  margin-top: 24px;
+  padding: 0;
+}
+
+#loginModal label {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+/* Mobile friendliness */
+@media (max-width: 480px) {
+  #loginModal {
+    margin: 30px 12px;
+    padding: 20px 16px;
+  }
+
+  #loginModal h2 {
+    font-size: 1.3rem;
+  }
+}
+
+body {
+  transition: background 600ms ease;
+}
