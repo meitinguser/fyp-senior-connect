@@ -93,6 +93,7 @@ const messageEl = document.getElementById('message');
 const gameArea = document.getElementById("gameArea");
 const puzzleWrapper = document.getElementById("puzzleWrapper");
 const omikujiWrapper = document.getElementById("omikujiWrapper");
+const showName = document.getElementById("showElderlyName");
 
 // ------------------ UTILS ------------------
 function shuffleArray(a) {
@@ -107,6 +108,8 @@ function imagePath(name) {
     return `/images/${name}.png`;
 }
 const basketImagePath = "/images/basket-top-view.png";
+showName.innerHTML = elderlyInfo.elderlyName;
+
 
 function getSingaporeTimestamp() {
     const date = new Date();
@@ -515,7 +518,8 @@ function initOmikuji() {
             const payload = {
                 elderlyId: elderlyInfo.elderlyId,
                 elderlyName: elderlyInfo.elderlyName,
-                status: "Checked In"
+                status: "Checked In",
+                timestamp: getSingaporeTimestamp()
             };
 
             fetch("/checkin", {
@@ -535,6 +539,7 @@ function initOmikuji() {
         }
     };
 }
+
 
 // ------------------ START ------------------
 initGame();

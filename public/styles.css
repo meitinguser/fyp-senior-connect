@@ -16,6 +16,47 @@
   --text-main: #333;
 }
 
+/* ---------- NAVBAR --------- */
+.navbar {
+    display: flex;
+    justify-content: space-between; /* Pushes content to the far left and right */
+    align-items: center; /* Vertically centers the items */
+    background-color: #333;
+    padding: 10px 10px;
+    color: white;
+}
+
+.nav-left {
+    display: flex; /* Makes items within each div align horizontally */
+    gap: 20px; /* Adds space between links */
+    padding: 0;
+    margin: 0;
+}
+.navbar a,
+.navbar span {
+    line-height: 1;
+}
+
+
+.nav-right {
+    display: flex;
+    align-items: center; /* ← THIS fixes it */
+    gap: 20px;
+}
+
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+}
+
+
+#showElderlyName {
+  justify-content: right;
+}
+
+
+
 /* ---------- BASE ---------- */
 
 html,
@@ -87,7 +128,7 @@ body {
   justify-content: space-evenly;
   
   /* Space between baskets and padding so content doesn’t touch edges */
-  gap: 14px;
+  gap: 10px;
   padding: 10px 0;
   box-sizing: border-box;
   /* Include padding and borders in total size */
@@ -258,8 +299,9 @@ body {
 
 /* ---------- PUZZLE ---------- */
 /* Puzzle wrapper is a perfect square */
+
 #puzzleWrapper {
-  width: min(90vw, 300px);
+  width: min(90vw, 400px);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   display: none;
@@ -328,4 +370,3 @@ body {
     font-size: 1.2rem;
   }
 }
-

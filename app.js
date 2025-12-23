@@ -103,6 +103,15 @@ async function snGet(table, query = "") {
   return response.data.result;
 }
 
+
+function getSingaporeTimestamp() {
+  const dateObj = new Date();
+  const singaporeOffset = 8 * 60; // UTC+8 in minutes
+  const utc = dateObj.getTime() + dateObj.getTimezoneOffset() * 60000;
+  const singaporeTime = new Date(utc + singaporeOffset * 60000);
+  return singaporeTime.toISOString().replace("T", " ").split(".")[0]; // "YYYY-MM-DD HH:mm:ss"
+}
+
 // Logger
 function logAuth(stage, info = "") {
   console.log(`[AUTH] ${stage}`, info);
@@ -266,6 +275,8 @@ app.get('/api/caregiver/checkins', async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
+
 
 
 // Logout

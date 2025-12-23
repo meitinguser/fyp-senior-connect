@@ -14,11 +14,15 @@
 
 <body>
   <!-- NAVBAR -->
-  <nav id="navbar" style="justify-content:center; padding:10px; background:#eee;">
-  <div>
-      <span>Senior Connect - </span>
-        <a href="/profile"><img src="images/profile.png" style="width:20px;  height:20px;"></a>
-      </div>
+  <nav class="navbar" id="navbar">
+    <div class="nav-left">
+      <a href="/">Senior Connect </a>
+      <span>       </span>
+    </div>
+    <div class="nav-right">
+      <span></span><span id="showElderlyName">Log In</span></span>
+      <a href="/profile"><img src="images/profile.png" style="width:25px;  height:25px;"></a>
+    </div>
   </nav>
 
   <div id="headerText"></div> <!-- Top text, changes based on the time of day-->
@@ -52,8 +56,8 @@
   </div>
 
   <button onclick="confirmEmergency()"
-    style="padding: 16px 28px; background:red; color:white; font-size:20px; border-radius:8px;">
-    🚨 Emergency </button>
+    style="background:red; color:white; font-size:20px; border-radius:8px;">
+    🚨 Emergency 🚨 </button>
 
   <script src="/script.js"></script>
 </body>
