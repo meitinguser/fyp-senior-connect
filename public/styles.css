@@ -32,30 +32,23 @@
     padding: 0;
     margin: 0;
 }
-.navbar a,
-.navbar span {
-    line-height: 1;
-}
-
 
 .nav-right {
     display: flex;
-    align-items: center; /* ← THIS fixes it */
+    align-items: center;
     gap: 20px;
 }
 
+.navbar a .navbar span {
 
-.navbar a {
     color: white;
     text-decoration: none;
+    line-height: 1;
 }
-
 
 #showElderlyName {
   justify-content: right;
 }
-
-
 
 /* ---------- BASE ---------- */
 
