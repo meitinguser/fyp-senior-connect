@@ -46,6 +46,10 @@
     line-height: 1;
 }
 
+.navbar a:visited {
+  color: white;
+}
+
 #showElderlyName {
   justify-content: right;
 }
