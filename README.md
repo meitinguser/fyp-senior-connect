@@ -51,5 +51,5 @@ copy the path to the json file
 - Moved puzzle.js and puzzle.css logic into main files (index.ejs, styles.css)
 
 23/12/25 Commit [mei ting]
-- Name shows on navbar op after logging in.
+- Name shows on navbar after logging in.
 - Navbar improved
