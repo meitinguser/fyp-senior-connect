@@ -107,10 +107,10 @@
   <table id="elderlyTable">
     <thead>
       <tr>
-        <th>Serial Number</th>
         <th>Username</th>
         <th>Name</th>
         <th>Condition</th>
+        <th>Language Preference</th>
         <th>Last Check-In</th>
 
       </tr>
@@ -217,10 +217,10 @@ function renderDashboard() {
 
     const row = `
       <tr data-status="${status}">
-        <td>${person.sn}</td>
         <td>${person.elderly_username}</td>
         <td>${person.name}</td>
         <td>${person.condition || "-"}</td>
+        <td>${person.language_preference}</td>
         <td class="${cssClass}">${displayText}</td>
       </tr>
     `;

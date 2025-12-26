@@ -501,11 +501,11 @@ app.get('/api/caregiver/elderly', async (req, res) => {
     const data = await snGet("x_1855398_elderl_0_elderly_data");
 
     const cleaned = data.map(row => ({
-      sn: row.serial_number || row.u_serial_number || "NA",
       name: row.name || row.u_name || "NA",
       elderly_username: row.elderly_username || row.u_elderly_username || "NA",
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
+      language_preference: row.language_preference || row.u_language_preference || "NA",
       caregiver: row.caregiver_name || row.u_caregiver_name || "NA"
 
     }));
