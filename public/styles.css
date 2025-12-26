@@ -18,32 +18,36 @@
 
 /* ---------- NAVBAR --------- */
 .navbar {
-    display: flex;
-    justify-content: space-between; /* Pushes content to the far left and right */
-    align-items: center; /* Vertically centers the items */
-    background-color: #333;
-    padding: 10px 10px;
-    color: white;
+  display: flex;
+  justify-content: space-between;
+  /* Pushes content to the far left and right */
+  align-items: center;
+  /* Vertically centers the items */
+  background-color: #333;
+  padding: 10px 10px;
+  color: white;
 }
 
 .nav-left {
-    display: flex; /* Makes items within each div align horizontally */
-    gap: 20px; /* Adds space between links */
-    padding: 0;
-    margin: 0;
+  display: flex;
+  /* Makes items within each div align horizontally */
+  gap: 20px;
+  /* Adds space between links */
+  padding: 0;
+  margin: 0;
 }
 
 .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .navbar a .navbar span {
 
-    color: white;
-    text-decoration: none;
-    line-height: 1;
+  color: white;
+  text-decoration: none;
+  line-height: 1;
 }
 
 #showElderlyName {
@@ -61,10 +65,10 @@ body {
   /* Eliminate default browser margins */
   /* Set a consistent font*/
 
-  /* Anti-aliasing = smooth edges */  
+  /* Anti-aliasing = smooth edges */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-   /* Same thing as above but for macOS */
+  /* Same thing as above but for macOS */
 
   /* Disable tap highlight color on mobile browsers for a cleaner look */
   -webkit-tap-highlight-color: transparent;
@@ -119,7 +123,7 @@ body {
   /* Center items horizontally and distribute them evenly vertically */
   align-items: center;
   justify-content: space-evenly;
-  
+
   /* Space between baskets and padding so content doesn’t touch edges */
   gap: 10px;
   padding: 10px 0;
@@ -298,7 +302,9 @@ body {
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   display: none;
-  margin-bottom: 10px;     /* consistent spacing */
+  margin-bottom: 10px;
+  /* consistent spacing */
+  padding-bottom: 120px;
 }
 
 #puzzleTitle {
@@ -312,10 +318,12 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  
+
 }
+
 .puzzle-piece {
-  background-size: 200% 200%; /* because 2×2 = 100%/2 = 50% per piece */
+  background-size: 200% 200%;
+  /* because 2×2 = 100%/2 = 50% per piece */
   background-repeat: no-repeat;
   cursor: grab;
   transition: transform .15s ease;
@@ -349,6 +357,27 @@ body {
   border-radius: 14px;
   cursor: pointer;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------- EMERGENCY BUTTON ---------- */
+#emergencyBtn {
+  background: red;
+  color: white;
+  font-size: 20px;
+  border-radius: 8px;
+  padding: 10px;
+
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 /* ---------- MOBILE ---------- */

@@ -9,6 +9,12 @@
 
     <link rel="stylesheet" href="/styles.css">
     <!-- Only load omikuji and puzzle if needed -->
+    
+    <!-- Pass server-side language preference to client-side JavaScript -->
+    <!-- This runs BEFORE script.js loads, so the preferred language is available immediately -->
+    <script>
+      window.PREFERRED_LANG = '<%= preferredLang %>';
+    </script>
 
 </head>
 
@@ -36,11 +42,10 @@
   </div>
 
   <!-- FORTUNE GAME (HIDDEN UNTIL gameMode === 'omikuji') -->
-
   <div id="omikujiWrapper" style="display:none;">
     <div id="2ndHeaderText"></div>
     <div id="sticksTray"></div>
-    <button id="drawStickBtn">Get Today's Fortune!</button>
+    <button id="drawStickBtn"></button>
   </div>
   <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
 
@@ -55,9 +60,8 @@
     </div>
   </div>
 
-  <button onclick="confirmEmergency()"
-    style="background:red; color:white; font-size:20px; border-radius:8px;">
-    🚨 Emergency 🚨 </button>
+  <!-- EMERGENCY BUTTON -->
+  <button id="emergencyBtn" onclick="confirmEmergency()"></button>
 
   <script src="/script.js"></script>
 </body>

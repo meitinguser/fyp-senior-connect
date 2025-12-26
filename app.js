@@ -8,9 +8,52 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORTnumber || 3000;
+
+// ------------------ PERSISTENT TRANSLATION CACHE ------------------
+// Cache file path to stores translation on disk so it survive server restarts
+const CACHE_FILE = path.join(__dirname, 'translation_cache.json');
+
+// In-memory cache for fast access
+let translationCache = {};
+
+// Load cache from file on startup
+function loadCacheFromFile() {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const data = fs.readFileSync(CACHE_FILE, 'utf8');
+      translationCache = JSON.parse(data);
+      console.log(`[CACHE] Loaded translations from file: `, Object.keys(translationCache));
+    } else {
+      console.log(`[CACHE] No cache file found, starting fresh`);
+      translationCache = {};
+    }
+  } catch (err) {
+    console.error('[CACHE] Error loading cache file:', err.message);
+    translationCache = {};
+  }
+}
+
+// Save cache to file (debounced to avoid excessive writes)
+let saveTimeout = null;
+function saveCacheToFile() {
+  // Debounce: wait 5 seconds before actually writing to disk
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try {
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(translationCache, null, 2));
+      console.log(`[CACHE] Saved translations to file:`, Object.keys(translationCache));
+    } catch (err) {
+      console.error('[CACHE] Error saving cache file:', err.message);
+    }
+  }, 5000);
+}
+
+// Initialize cache on startup
+loadCacheFromFile();
 
 // ------------------ MIDDLEWARE ------------------
 app.use(express.json());
@@ -170,11 +213,233 @@ function requireLogin(req, res, next) {
   return res.redirect("/profile");
 }
 
+// ------------------ LANGUAGE CODE MAPPING -----------------
+// Maps ServiceNow language names to language codes for translation
+const LANGUAGE_MAP = {
+  'English': 'en',
+  'Chinese': 'zh',
+  'Malay': 'ms',
+  'Tamil': 'ta',
+  // Fallback: if ServiceNow stores codes instead 
+  'en': 'en',
+  'zh': 'zh',
+  'ms': 'ms',
+  'ta': 'ta'
+};
+
+// Helper function to convert language name/code to standard code
+function getLanguageCode(langValue) {
+  if (!langValue) return 'en';
+
+  // Normalise: trim white and make case-insensitive
+  const normalized = langValue.trim().toLowerCase();
+
+  // Check against our map (case-insensitive)
+  for (const [key, code] of Object.entries(LANGUAGE_MAP)) {
+    if (key.toLowerCase() === normalized) {
+      return code;
+    }
+  }
+
+  // Default to English if no match 
+  console.warn(`Unknown language value: ${langValue}, defaulting to English`);
+  return 'en';
+}
+
+// ------------------ CLOUD TRANSLATION API CONFIG ------------------
+
+// Web App URL (For connecting to Google Web App )
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx-yLPCPqEGCpz5HkM3DDbTbK61E8cdTCir10eB9EGDCCpz9wVMnx4gPk96K5XYYXiTdA/exec';
+
+// Library automatically finds the key based on the environment variable
+// Initialize Google Cloud Translation Client
+const { Translate } = require('@google-cloud/translate').v2;
+
+// Client uses GOOGLE_APPLICATION_CREDENTIALS environment variable
+const translateClient = new Translate();
+// no file path is passed here as the environment variable does the work. 
+
+app.post('/api/translate', async (req, res) => {
+  // Destructure the array of strings and target language code from the client's request body
+  const { texts, targetLang } = req.body;
+
+  // Input validation 
+  if (!texts || !targetLang || !Array.isArray(texts) || texts.length === 0) {
+    return res.status(400).json({
+      error: 'Invalid request: Provide an array of texts and a target language code.'
+    });
+  }
+
+  try {
+    // CHECK CACHE FIRST - if translation exists for this language, return them
+    if (translationCache[targetLang]) {
+      console.log(`[CACHE HIT] Returning cached translations for: ${targetLang}`);
+
+      // Build response from cache - map English texts to their cached translations
+      const cachedTranslations = texts.map((text, index) => {
+        // The order matches the order in transText.en from script.js
+        const keys = ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT', 'sorting', 'basket',
+          'puzzle', 'puzzleTitle', 'drawAgain', 'fortune', 'text1', 'text2',
+          'text3', 'text4', 'text51', 'text52', 'text6', 'omi1', 'omi2',
+          'omi3', 'omi4', 'omi5', 'emergency', 'drawStickBtn'];
+        const key = keys[index];
+        return translationCache[targetLang][key] || text;
+      });
+
+      return res.json({ translations: cachedTranslations, cached: true });
+    }
+
+    // CACHE MISS - need to translate
+    console.log(`[CACHE MISS] Translating to: ${targetLang}`);
+
+    // Calls the google cloud translation API
+    // texts is an array of strings, targetLang is the code (e.g. 'zh', 'ms')
+    let [translations] = await translateClient.translate(texts, targetLang);
+
+    // The API returns an array but ensures it is one for consistency
+    if (!Array.isArray(translations)) {
+      translations = [translations];
+    }
+
+    // Store in cache for future requests
+    // Build cache object with keys matching the content structure
+    const cacheObj = {
+      MORNING: translations[0],
+      AFTERNOON: translations[1],
+      EVENING: translations[2],
+      NIGHT: translations[3],
+      sorting: translations[4],
+      basket: translations[5],
+      puzzle: translations[6],
+      puzzleTitle: translations[7],
+      drawAgain: translations[8],
+      fortune: translations[9],
+      text1: translations[10],
+      text2: translations[11],
+      text3: translations[12],
+      text4: translations[13],
+      text51: translations[14],
+      text52: translations[15],
+      text6: translations[16],
+      omi1: translations[17],
+      omi2: translations[18],
+      omi3: translations[19],
+      omi4: translations[20],
+      omi5: translations[21],
+      emergency: translations[22],
+      drawStickBtn: translations[23]
+    };
+
+    // Store in memory cache
+    translationCache[targetLang] = cacheObj;
+
+    // Save to disk (debounced)
+    saveCacheToFile();
+
+    console.log(`[CACHE STORED] Saved translations for: ${targetLang}`);
+
+    // Send the translated array to the client
+    res.json({
+      translations: translations,
+      cached: false
+    });
+
+  } catch (error) {
+    // Handle API errors
+    console.error('Translation API error:', error.message);
+    res.status(500).json({
+      error: 'Failed to communicate with the translation service.',
+      detail: error.message
+    });
+  }
+});
+
+// ------------------ TRANSLATION CACHE MANAGEMENT ENDPOINTS ------------------
+
+// Get cached translations for a specific language 
+app.get('/api/translations/:langCode', (req, res) => {
+  const { langCode } = req.params;
+
+  if (translationCache[langCode]) {
+    console.log(`[CACHE] Serving cached translations for: ${langCode}`);
+    res.json({
+      success: true,
+      translations: translationCache[langCode],
+      cached: true
+    });
+  } else {
+    res.json({
+      success: false,
+      message: 'No cached translations for this language',
+      cached: false
+    });
+  }
+});
+
+// Get all cached languages
+app.get('/api/translations', (req, res) => {
+  const cachedLanguages = Object.keys(translationCache);
+  res.json({
+    success: true,
+    languages: cachedLanguages,
+    cache: translationCache
+  });
+});
+
+// Clear cache for a specific language (admin endpoint)
+app.delete('/api/translations/:langCode', (req, res) => {
+  const { langCode } = req.params;
+
+  if (translationCache[langCode]) {
+    delete translationCache[langCode];
+    saveCacheToFile();
+    res.json({
+      success: true,
+      message: `Cache cleared for ${langCode}`
+    });
+  } else {
+    res.json({
+      success: false,
+      message: 'No cache found for this language'
+    });
+  }
+});
+
+// Clear all cache (admin endpoint)
+app.delete('api/translations', (req, res) => {
+  translationCache = {};
+  saveCacheToFile();
+  res.json({
+    success: true,
+    message: 'All translation cache cleared'
+  });
+});
+
 // ------------------ ROUTES ------------------
 
-// Main (game)
-app.get("/", requireLogin, (req, res) => {
+// Main game page (Fetches language from authenticated user)
+app.get("/", requireLogin, async (req, res) => { // async with await
+  let preferredLang = 'en'; // Default to English
+
+  // User is authenticated, req.user contains the elderly person's data
+  if (req.user) {
+    try {
+      // Get language preference directly from authenticated user object
+      const langPreference = req.user.language_preference || req.user.u_language_preference;
+
+      // Convert language name to code (e.g. "Chinese" -> "zh")
+      preferredLang = getLanguageCode(langPreference);
+
+      console.log(`Loading page for ${req.user.name} (${req.user.u_elderly_username}) with language: ${langPreference} (${preferredLang})`);
+    } catch (err) {
+      console.error("Error fetching language preference on page load:", err.message);
+    }
+  }
+
+  // Pass the preferred language code to the EJS template
   res.render("index", {
+    title: "Senior Support - Home",
+    preferredLang: preferredLang,
     user: req.user
   });
 });
@@ -276,23 +541,55 @@ app.get('/api/caregiver/checkins', async (req, res) => {
   }
 });
 
+// ------------------ GET LANGUAGE PREFERENCE ------------------
+// Fetches the elderly person's preferred language from ServiceNow by sys_id
+app.get("/api/language-preference/:sys_id", async (req, res) => {
+  const { sys_id } = req.params;
 
+  if (!sys_id) {
+    return res.status(400).json({ error: "sys_id required" });
+  }
 
+  try {
+    // Get elderly record by sys_id 
+    const user = await getElderlyBySysId(sys_id);
+
+    if (!user) {
+      return res.status(404).json({ error: "Elderly record not found" });
+    }
+
+    // Get language preference and convert to code
+    const langPreference = user.language_preference || user.u_language_preference;
+    const langCode = getLanguageCode(langPreference);
+
+    res.json({
+      languagePreference: langCode,
+      languageName: langPreference || 'English',
+      name: user.name || ""
+    });
+  } catch (err) {
+    console.error("Language preference fetch error:", err.message);
+    res.status(500).json({
+      error: "Failed to fetch language preference",
+      details: err.message
+    });
+  }
+});
 
 // Logout
 app.post("/logout", (req, res) => {
   req.logout(err => {
-  if (err) return res.status(500).json({ success: false });
+    if (err) return res.status(500).json({ success: false });
     res.clearCookie("elderlyId");
     res.clearCookie("elderlyName");
     res.json({ success: true });
   });
 });
 
-// Check-in
+// Check-in - Uses authenticated user's sys_id
 app.post("/checkin", async (req, res) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ success: false });
+    return res.status(401).json({ success: false, error: "Not authenticated" });
   }
 
   try {
@@ -301,16 +598,44 @@ app.post("/checkin", async (req, res) => {
       {
         u_elderly: req.user.sys_id,
         name: req.user.name,
-        status: "Checked In"
+        status: "Checked In",
+        timestamp: getSingaporeTimestamp()
       },
       { auth: { username: SN_USER, password: SN_PASS } }
     );
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false });
+    console.error("Check-in error", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// ------------------ GRACEFUL SHUTDOWN ------------------
+// Save cache to file when server shuts down 
+process.on('SIGINT', () => {
+  console.log('\n[SERVER] Shutting down gracefully...');
+  clearTimeout(saveTimeout); // Cancel debounced save
+  try {
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(translationCache, null, 2));
+    console.log('[CACHE] Final save complete');
+  } catch (err) {
+    console.error('[CACHE] Error during final save:', err.message);
+  }
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n[SERVER] Shutting down gracefully...');
+  clearTimeout(saveTimeout);
+  try {
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(translationCache, null, 2));
+    console.log('[CACHE] Final save complete');
+  } catch (err) {
+    console.error('[CACHE] Error during final save:', err.message);
+  }
+  process.exit(0);
+})
 
 // ------------------ START SERVER ------------------
 app.listen(PORT, () =>

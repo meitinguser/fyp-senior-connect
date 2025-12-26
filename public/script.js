@@ -43,32 +43,6 @@ function getCurrentElderlyInfo() {
     };
 }
 
-// ------------------ DOMContentLoaded ------------------
-document.addEventListener("DOMContentLoaded", () => {
-    // ------------------ ELDERLY ID NAVBAR ------------------
-    const navbarBtn = document.getElementById("enterIdBtn");
-    if (navbarBtn) {
-        navbarBtn.onclick = () => {
-            const currentId = getCookie("elderlyId") || "";
-            const currentName = getCookie("elderlyName") || "";
-
-            const id = prompt("Enter Elderly Serial Number:", currentId);
-            const name = prompt("Enter Elderly Name:", currentName);
-
-            if (id && name) {
-                setCookie("elderlyId", id);
-                setCookie("elderlyName", name);
-
-                console.log(getCookie("elderlyId"), getCookie("elderlyName"));
-                alert(`Elderly ID saved: ${getCookie("elderlyName")} (${getCookie("elderlyId")})`);
-            }
-        };
-    }
-
-    // Start watching cookies
-    watchElderlyCookies();
-});
-
 // ------------------ GAME CONFIG ------------------
 let gameMode = null;
 const allGames = ["sorting", "flowers", "puzzle", "omikuji"];
@@ -124,21 +98,21 @@ function getSingaporeTimestamp() {
     return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
 }
 
-function setTimeBasedBackground(content) {
+function setTimeBasedBackground() {
     const hour = new Date().getHours();
     let bg, greeting, textcol = '#333';
     if (hour >= 6 && hour < 12) {
         bg = 'linear-gradient(to top,#fdebd0,#f6ddcc,#fad7a0)';
-        greeting = content.MORNING;
+        greeting = currentContent.MORNING;
     } else if (hour >= 12 && hour < 18) {
         bg = 'linear-gradient(to top,#ffd89b,#ffb347)';
-        greeting = content.AFTERNOON;
+        greeting = currentContent.AFTERNOON;
     } else if (hour >= 18 && hour < 20) {
         bg = 'linear-gradient(to top,#f6a98f,#f28e63)';
-        greeting = content.EVENING;
+        greeting = currentContent.EVENING;
     } else {
         bg = 'linear-gradient(to top,#2c3e50,#34495e)';
-        greeting = content.NIGHT;
+        greeting = currentContent.NIGHT;
         textcol = 'white';
     }
     document.body.style.background = bg;
@@ -146,14 +120,11 @@ function setTimeBasedBackground(content) {
     document.getElementById('headerText').style.color = textcol;
     const secondHeader = document.getElementById('2ndHeaderText');
     if (secondHeader) secondHeader.style.color = textcol;
-    const langLabel = document.getElementById('languageSelectLabel');
-    if (langLabel) langLabel.style.color = textcol;
     if (messageEl) messageEl.style.color = textcol;
 }
 
 
-// ------------------ TRANSLATION / 2ND HEADER ------------------
-let activeLangCode = 'en';
+// ------------------ TRANSLATION CONTENT MAP ------------------
 let transText = {
     en: {
         MORNING: "Good Morning!",
@@ -172,17 +143,128 @@ let transText = {
         text4: "Not quite right, try again 🙏",
         text51: "Selected ",
         text52: ". Drag to a basket to place",
-        text6: "Drag an item from the tray to their matching basket."
+        text6: "Drag an item from the tray to their matching basket.",
+        omi1: "Your fortune: Uber Luck! ✨",
+        omi2: "Your fortune: Super Luck! 🌟",
+        omi3: "Your fortune: Lucky Day! 🍀",
+        omi4: "Your fortune: Good day for a good day 😄",
+        omi5: "Your fortune: Peaceful day 😊",
+        emergency: "🚨 Emergency 🚨",
+        drawStickBtn: "Get Today's Fortune!"
     },
     zh: null,
+    ms: null,
+    ta: null
 };
+
+// ------------------ LOAD PREFERRED LANGUAGE INSTANTLY ------------------
+// the preferred language is passed from server-side (available as window.PREFERRED_LANG)
+// SAFE FALLBACK: check if window.PREFERRED_LANG exists and is a valid language code
+
+let activeLangCode = 'en'; // Default to English
+if (typeof window !== 'undefined' && window.PREFERRED_LANG && ['en', 'zh', 'ms', 'ta'].includes(window.PREFERRED_LANG)) {
+    activeLangCode = window.PREFERRED_LANG;
+}
+
+// Update current content reference 
 let currentContent = transText[activeLangCode];
+
+// ------------------ LANGUAGE CHANGE HANDLER ------------------
+// Function for handling translation by calling server API (server cache handles persistence)
+async function handleLanguageChange(targetLangCode) {
+    activeLangCode = targetLangCode;
+
+    // Check in-memory cache first (for same session)
+    if (transText[targetLangCode]) {
+        console.log(`[MEMORY CACHE HIT] Using cached translations for: ${targetLangCode}`);
+        currentContent = transText[targetLangCode];
+
+        // Update UI with translated content
+        setTimeBasedBackground();
+        updateGameText();
+        updateButtonText();
+        initGame();
+        initOmikuji();
+        return currentContent;
+    }
+
+    // Fetch from server (server handles caching)
+    console.log(`[FETCHING] Requesting translations for: ${targetLangCode}`);
+    const englishTexts = Object.values(transText.en);
+    const originalKeys = Object.keys(transText.en);
+
+    try {
+        const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texts: englishTexts, targetLang: targetLangCode })
+        });
+
+        if (!response.ok) {
+            // Read the body as text to get the server's error message
+            const errorText = await response.text();
+
+            // Throw a custom error that includes the server's status and message
+            throw new Error(`Server translation failed (Status: ${response.status}). Detail: ${errorText.substring(0, 150)}...`);
+        }
+
+        // Safely parse the JSON data ONLY if the response was successful
+        const data = await response.json();
+
+        // Log whether it was served from server cache
+        if (data.cached) {
+            console.log(`[SERVER CACHE HIT] Translations served from server cache`);
+        } else {
+            console.log(`[TRANSLATED] Fresh translation received from Google API`);
+        }
+
+        // Get translated strings from response
+        const translatedStrings = data.translations;
+
+        // Build and store translated content map in memory
+        const newContent = {};
+        originalKeys.forEach((key, index) => {
+            newContent[key] = translatedStrings[index];
+        });
+
+        // Store in memory cache for this session
+        transText[targetLangCode] = newContent;
+        currentContent = transText[targetLangCode];
+
+        // Update UI with translated content
+        setTimeBasedBackground();
+        updateGameText();
+        updateButtonText();
+        initGame();
+        initOmikuji();
+
+    } catch (error) {
+        // Catch block to handle network errors and customer error thrown
+        console.error('Translation error:', error);
+
+        // Revert to English on failure
+        activeLangCode = 'en';
+        currentContent = transText['en'];
+        console.error('Translation failed. Reverting to English. Error:' + error.message);
+    }
+}
 
 function updateGameText() {
     if (gameMode === "sorting") document.getElementById("2ndHeaderText").textContent = currentContent.sorting;
     else if (gameMode === "flowers") document.getElementById("2ndHeaderText").textContent = currentContent.basket;
     else if (gameMode === "puzzle") document.getElementById("puzzleTitle").textContent = currentContent.puzzleTitle;
     else if (gameMode === "omikuji") document.getElementById("2ndHeaderText").textContent = currentContent.fortune;
+}
+
+// Update button text with translated content
+function updateButtonText() {
+    // Update emergency button 
+    const emergencyBtn = document.getElementById("emergencyBtn");
+    if (emergencyBtn) emergencyBtn.textContent = currentContent.emergency;
+
+    // Update fortune button 
+    const fortuneBtn = document.getElementById("drawStickBtn");
+    if (fortuneBtn) fortuneBtn.textContent = currentContent.drawStickBtn;
 }
 
 // ------------------ INITIALIZE GAME ------------------
@@ -237,94 +319,94 @@ function initGame() {
         trayEl.appendChild(it);
     });
 
-    
+    setTimeBasedBackground();
     updateGameText();
+    updateButtonText();
     initDragAndDrop();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
 
-	const elderlyId = getCookie("elderlyId");
-	const elderlyName = getCookie("elderlyName");
-	if (!elderlyId || !elderlyName) return; // cannot check in without cookies
+    const elderlyId = getCookie("elderlyId");
+    const elderlyName = getCookie("elderlyName");
+    if (!elderlyId || !elderlyName) return; // cannot check in without cookies
 
-	const wrapper = document.getElementById("puzzleWrapper");
-	if (!wrapper) return;
+    const wrapper = document.getElementById("puzzleWrapper");
+    if (!wrapper) return;
 
-	// Hide puzzle unless it's the current game
-	wrapper.style.display = (gameMode === "puzzle") ? "block" : "none";
+    // Hide puzzle unless it's the current game
+    wrapper.style.display = (gameMode === "puzzle") ? "block" : "none";
 
-	const pieces = Array.from(document.querySelectorAll(".puzzle-piece"));
-	const puzzleImage = "/images/puzzle_bunny.jpg";
-	const correctPositions = ["0% 0%", "100% 0%", "0% 100%", "100% 100%"];
+    const pieces = Array.from(document.querySelectorAll(".puzzle-piece"));
+    const puzzleImage = "/images/puzzle_bunny.jpg";
+    const correctPositions = ["0% 0%", "100% 0%", "0% 100%", "100% 100%"];
 
-	pieces.forEach((piece, i) => {
-		piece.dataset.correct = correctPositions[i];
-		piece.style.backgroundImage = `url('${puzzleImage}')`;
-	});
+    pieces.forEach((piece, i) => {
+        piece.dataset.correct = correctPositions[i];
+        piece.style.backgroundImage = `url('${puzzleImage}')`;
+    });
 
-	if (gameMode !== "puzzle") return; // only init drag/drop if puzzle is active
+    if (gameMode !== "puzzle") return; // only init drag/drop if puzzle is active
 
-	shufflePieces();
+    shufflePieces();
 
-	function shufflePieces() {
-		const shuffled = [...correctPositions].sort(() => Math.random() - 0.5);
-		pieces.forEach((p, i) => p.style.backgroundPosition = shuffled[i]);
-	}
+    function shufflePieces() {
+        const shuffled = [...correctPositions].sort(() => Math.random() - 0.5);
+        pieces.forEach((p, i) => p.style.backgroundPosition = shuffled[i]);
+    }
 
-	let dragged = null;
+    let dragged = null;
 
-	pieces.forEach(piece => {
-		piece.draggable = true;
-		piece.addEventListener("dragstart", () => {
-			dragged = piece;
-		});
-		piece.addEventListener("dragover", e => e.preventDefault());
-		piece.addEventListener("drop", () => {
-			if (!dragged || dragged === piece) return;
-			const temp = piece.style.backgroundPosition;
-			piece.style.backgroundPosition = dragged.style.backgroundPosition;
-			dragged.style.backgroundPosition = temp;
-			checkSolved();
-		});
-	});
+    pieces.forEach(piece => {
+        piece.draggable = true;
+        piece.addEventListener("dragstart", () => {
+            dragged = piece;
+        });
+        piece.addEventListener("dragover", e => e.preventDefault());
+        piece.addEventListener("drop", () => {
+            if (!dragged || dragged === piece) return;
+            const temp = piece.style.backgroundPosition;
+            piece.style.backgroundPosition = dragged.style.backgroundPosition;
+            dragged.style.backgroundPosition = temp;
+            checkSolved();
+        });
+    });
 
-	function checkSolved() {
-		const solved = pieces.every(p => p.style.backgroundPosition === p.dataset.correct);
-		if (!solved) return;
+    function checkSolved() {
+        const solved = pieces.every(p => p.style.backgroundPosition === p.dataset.correct);
+        if (!solved) return;
 
-		pieces.forEach(p => p.classList.add("piece-correct"));
+        pieces.forEach(p => p.classList.add("piece-correct"));
 
-		const payload = {
-			elderlyId,
-			elderlyName,
-			status: "Checked In"
-		};
+        const payload = {
+            elderlyId,
+            elderlyName,
+            status: "Checked In"
+        };
 
-		setTimeout(() => {
-			fetch("/checkin", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify(payload)
-				})
-				.then(r => r.json())
-				.then(data => {
-					console.log("Puzzle check-in response:", data);
-					const messageEl = document.getElementById("message");
-					if (messageEl) messageEl.textContent = "Check-in recorded successfully! 💛";
-				})
-				.catch(err => {
-					console.error("Puzzle check-in error:", err);
-					const messageEl = document.getElementById("message");
-					if (messageEl) messageEl.textContent = "Couldn't connect. Try again later 🙏";
-				});
-		}, 400);
-	}
+        setTimeout(() => {
+            fetch("/checkin", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(data => {
+                    console.log("Puzzle check-in response:", data);
+                    const messageEl = document.getElementById("message");
+                    if (messageEl) messageEl.textContent = currentContent.text2;
+                })
+                .catch(err => {
+                    console.error("Puzzle check-in error:", err);
+                    const messageEl = document.getElementById("message");
+                    if (messageEl) messageEl.textContent = currentContent.text3;
+                });
+        }, 400);
+    }
 
 });
-    setTimeBasedBackground(currentContent);
 
 // ------------------ DRAG & DROP ------------------
 function initDragAndDrop() {
@@ -395,15 +477,15 @@ function initDragAndDrop() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 })
-                .then(r => r.json())
-                .then(data => {
-                    console.log("ServiceNow response:", data);
-                    messageEl.textContent = currentContent.text2;
-                })
-                .catch(err => {
-                    console.error("Check-in error:", err);
-                    messageEl.textContent = currentContent.text3;
-                });
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log("ServiceNow response:", data);
+                        messageEl.textContent = currentContent.text2;
+                    })
+                    .catch(err => {
+                        console.error("Check-in error:", err);
+                        messageEl.textContent = currentContent.text3;
+                    });
             }, 400);
         }
     }
@@ -495,24 +577,26 @@ function initDragAndDrop() {
 }
 
 // ------------------ OMIKUJI ------------------
-
 function initOmikuji() {
     if (gameMode !== "omikuji") return;
     omikujiWrapper.style.display = "block";
     const sticksTray = document.getElementById("sticksTray");
     const fortuneMessage = document.getElementById("fortuneMessage");
-    
+
     let stickBtn = document.getElementById("drawStickBtn");
     if (!stickBtn) {
         stickBtn = document.createElement("button");
         stickBtn.id = "drawStickBtn";
-        sticksTray = stickBtn;
+        sticksTray = appendChild(stickBtn);
     }
 
-    const fortunes = ["Uber Luck! ✨", "Super Luck! 🌟", "Lucky Day! 🍀", "Good day for a good day 😄", "Peaceful day 😊"];
+    // Set button text
+    stickBtn.textContent = currentContent.drawStickBtn;
+
+    let fortunes = [currentContent.omi1, currentContent.omi2, currentContent.omi3, currentContent.omi4, currentContent.omi5];
     stickBtn.onclick = () => {
         const f = fortunes[Math.floor(Math.random() * fortunes.length)];
-        fortuneMessage.textContent = `Your fortune: ${f}`;
+        fortuneMessage.textContent = f;
 
         if (elderlyInfo.elderlyId && elderlyInfo.elderlyName) {
             const payload = {
@@ -527,19 +611,39 @@ function initOmikuji() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             })
-            .then(r => r.json())
-            .then(data => {
-                console.log("Omikuji check-in response:", data);
-                if (messageEl) messageEl.textContent = "Check-in recorded successfully! 💛";
-            })
-            .catch(err => {
-                console.error("Omikuji check-in error:", err);
-                if (messageEl) messageEl.textContent = "Couldn't connect. Try again later 🙏";
-            });
+                .then(r => r.json())
+                .then(data => {
+                    console.log("Omikuji check-in response:", data);
+                    if (messageEl) messageEl.textContent = currentContent.text2;
+                })
+                .catch(err => {
+                    console.error("Omikuji check-in error:", err);
+                    if (messageEl) messageEl.textContent = currentContent.text3;
+                });
         }
     };
 }
 
+//  ------------------ EMERGENCY BUTTON ------------------
+// For future task to post to servicenow
+
+// ------------------ DOMCONTENTLOADED ------------------
+document.addEventListener("DOMContentLoaded", async () => {
+    // Display logged-in user's name in navbar
+    const nameDisplay = document.getElementById("showElderlyName");
+    if (nameDisplay && elderlyInfo.elderlyName) {
+        nameDisplay.textContent = elderlyInfo.elderlyName;
+    }
+
+    // If preferred language is not English, translate immediately on page load
+    if (activeLangCode !== 'en') {
+        console.log(`Applying preferred language: ${activeLangCode}`);
+        await handleLanguageChange(activeLangCode);
+    }
+
+    // Start watching cookies
+    watchElderlyCookies();
+});
 
 // ------------------ START ------------------
 initGame();
