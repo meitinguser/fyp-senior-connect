@@ -50,3 +50,6 @@ copy the path to the json file
 - Edited caregiver.ejs columns to include username to better suit new username/password system
 - Moved puzzle.js and puzzle.css logic into main files (index.ejs, styles.css)
 
+23/12/25 Commit [mei ting]
+- Name shows on navbar after logging in.
+- Navbar improved

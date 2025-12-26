@@ -1,6 +1,6 @@
 /* ========== PROFILE / LOGIN SCREEN ========== */
 html {
-      font-family: 'Lato', sans-serif;
+  font-family: "Nunito-Sans", sans-serif;
 }
 #loginModal {
   width: 100%;
@@ -19,7 +19,6 @@ html {
   margin-bottom: 20px;
   font-size: 1.5rem;
   font-weight: 700;
-  font-family: 'Lato', sans-serif;
   color: #333;
 }
 
