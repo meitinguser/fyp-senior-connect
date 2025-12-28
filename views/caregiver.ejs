@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Caregiver Dashboard</title>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,11 +28,13 @@
       background: white;
       border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       text-align: left;
     }
 
-    .card h2 { margin: 5px 0; }
+    .card h2 {
+      margin: 5px 0;
+    }
 
     #elderlyTable {
       width: 100%;
@@ -40,10 +42,11 @@
       border-radius: 10px;
       border-collapse: collapse;
       overflow: hidden;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    #elderlyTable th, #elderlyTable td {
+    #elderlyTable th,
+    #elderlyTable td {
       padding: 12px;
       border-bottom: 1px solid #ddd;
       text-align: left;
@@ -54,7 +57,9 @@
       color: white;
     }
 
-    tr:last-child td { border-bottom: none; }
+    tr:last-child td {
+      border-bottom: none;
+    }
 
     .status-ok {
       color: green;
@@ -70,6 +75,7 @@
       margin: 15px 0;
       display: flex;
       justify-content: flex-end;
+      gap: 15px;
     }
   </style>
 </head>
@@ -79,29 +85,37 @@
 
   <!-- Summary Cards -->
   <div id="summaryCards">
-    <div class="card"><h2 id="totalElderly">0</h2><p>Elderlies Under My Care</p></div>
-    <div class="card"><h2 id="checkedInToday">0</h2><p>Checked In Today</p></div>
-    <div class="card"><h2 id="missedToday">0</h2><p>Missed Today</p></div>
+    <div class="card">
+      <h2 id="totalElderly">0</h2>
+      <p>Elderlies Under My Care</p>
+    </div>
+    <div class="card">
+      <h2 id="checkedInToday">0</h2>
+      <p>Checked In Today</p>
+    </div>
+    <div class="card">
+      <h2 id="missedToday">0</h2>
+      <p>Missed Today</p>
+    </div>
   </div>
 
-  <span>Caregiver:
-  <select id="caregiverSelect">
-  <option value="all">All Caregivers</option>
-  </select>
-  </span>
-  <br>
+  <!-- Filters -->
+  <div id="filterRow">
+    <span>Caregiver:
+      <select id="caregiverSelect">
+        <option value="all">All Caregivers</option>
+      </select>
+    </span>
 
-  
-  <!-- Filter -->
-  <span>Senior:
-  <select id="filterSelect">
-    <option value="all">All Seniors</option>
-    <option value="checked">Checked In Today</option>
-    <option value="missed-morning">Missed (Morning)</option>
-    <option value="missed-night">Missed (Night)</option>
-  </select>
-  </span>
-
+    <span>Senior:
+      <select id="filterSelect">
+        <option value="all">All Seniors</option>
+        <option value="checked">Checked In Today</option>
+        <option value="missed-morning">Missed (Morning)</option>
+        <option value="missed-night">Missed (Night)</option>
+      </select>
+    </span>
+  </div>
 
   <!-- Table -->
   <table id="elderlyTable">
@@ -111,172 +125,139 @@
         <th>Name</th>
         <th>Condition</th>
         <th>Language Preference</th>
-        <th>Last Check-In</th>
-
+        <th>Caregiver</th>
+        <th>Check-In Status</th>
       </tr>
     </thead>
-
     <tbody id="elderlyBody">
       <!-- Filled by JS -->
     </tbody>
   </table>
 
-<script>
-  let elderlyData = [];
-  let checkinLogs = [];
+  <script>
+    let elderlyData = [];
+    let checkinLogs = [];
 
-  function todayDate() {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);  // YYYY-MM-DD
-  }
+    function todayDate() {
+      return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    }
 
-  async function load() {
-    const eRes = await fetch("/api/caregiver/elderly");
-    const cRes = await fetch("/api/caregiver/checkins");
+    async function load() {
+      const eRes = await fetch("/api/caregiver/elderly");
+      const cRes = await fetch("/api/caregiver/checkins");
 
-    const eData = await eRes.json();
-    const cData = await cRes.json();
+      const eData = await eRes.json();
+      const cData = await cRes.json();
 
-    elderlyData = eData.elderly || [];
-    checkinLogs = cData.checkins || [];
+      elderlyData = eData.elderly || [];
+      checkinLogs = cData.checkins || [];
 
+      populateCaregiverFilter();
+      renderDashboard();
+    }
 
-    populateCaregiverFilter();
-    renderDashboard();
-  }
-
-  // --- Helper: Get today's log for one person ---
-  function getTodayStatus(logs) {
-    const today = todayDate();
-
-    // Logs already sorted newest→oldest
-    for (let log of logs) {
-      const logDate = log.timestamp || log.sys_created_on;
-
-      if (!logDate) continue;
-
-      const d = logDate.slice(0, 10);
-      if (d === today) {
-        const status = log.status.toLowerCase();
-
-        if (status.includes("checked in")) return "checked";
-        if (status.includes("missed (morning)")) return "missed-morning";
-        if (status.includes("missed (night)")) return "missed-night";
+    function getTodayStatus(logs) {
+      const today = todayDate();
+      for (let log of logs) {
+        const logDate = log.timestamp || log.sys_created_on;
+        if (!logDate) continue;
+        if (logDate.slice(0, 10) === today) {
+          const status = log.status.toLowerCase();
+          if (status.includes("checked in")) return "checked";
+          if (status.includes("missed (morning)")) return "missed-morning";
+          if (status.includes("missed (night)")) return "missed-night";
+        }
       }
+      return "none";
     }
 
-    return "none"; // No logs today → treat as missed later
-  }
+    function renderDashboard(statusFilter = "all") {
+      const body = document.getElementById("elderlyBody");
+      body.innerHTML = "";
 
-function renderDashboard() {
-  const body = document.getElementById("elderlyBody");
-  body.innerHTML = "";
+      const selectedCaregiver = document.getElementById("caregiverSelect").value;
 
-  const selectedCaregiver = document.getElementById("caregiverSelect").value;
+      let totalCount = 0;
+      let checkedCount = 0;
+      let missedMorningCount = 0;
+      let missedNightCount = 0;
 
-  let totalCount = 0;
-  let checkedCount = 0;
-  let missedMorningCount = 0;
-  let missedNightCount = 0;
+      elderlyData.forEach(person => {
+        if (selectedCaregiver !== "all" && person.caregiver !== selectedCaregiver) return;
 
-  elderlyData.forEach(person => {
+        const logs = checkinLogs.filter(l => l.elderly_name === person.name);
+        const status = getTodayStatus(logs);
 
-    // Filter by caregiver
-    if (selectedCaregiver !== "all" && person.caregiver !== selectedCaregiver) {
-      return;
+        if (statusFilter !== "all" && status !== statusFilter) return;
+
+        totalCount++;
+
+        let displayText = "";
+        let cssClass = "";
+
+        if (status === "checked") {
+          displayText = "checked in";
+          cssClass = "status-ok";
+          checkedCount++;
+        } else if (status === "missed-morning") {
+          displayText = "missed (morning)";
+          cssClass = "status-missed";
+          missedMorningCount++;
+        } else if (status === "missed-night") {
+          displayText = "missed (night)";
+          cssClass = "status-missed";
+          missedNightCount++;
+        } else {
+          displayText = "missed (no log)";
+          cssClass = "status-missed";
+          missedMorningCount++; // default bucket
+        }
+
+        const row = `
+        <tr data-status="${status}">
+          <td>${person.elderly_username}</td>
+          <td>${person.name}</td>
+          <td>${person.condition || "-"}</td>
+          <td>${person.language_preference}</td>
+          <td>${person.caregiver}</td>
+          <td class="${cssClass}">${displayText}</td>
+        </tr>
+      `;
+
+        body.insertAdjacentHTML("beforeend", row);
+      });
+
+      // Update summary cards based on filtered rows
+      document.getElementById("totalElderly").textContent = totalCount;
+      document.getElementById("checkedInToday").textContent = checkedCount;
+      document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
     }
 
-    totalCount++;
+    function populateCaregiverFilter() {
+      const select = document.getElementById("caregiverSelect");
+      const caregivers = [...new Set(elderlyData.map(e => e.caregiver).filter(Boolean))];
 
-    const logs = checkinLogs.filter(l => l.elderly_name === person.name);
-    const status = getTodayStatus(logs);
-
-    let displayText = "";
-    let cssClass = "";
-
-    if (status === "checked") {
-      displayText = "checked in";
-      cssClass = "status-ok";
-      checkedCount++;
-
-    } else if (status === "missed-morning") {
-      displayText = "missed (morning)";
-      cssClass = "status-missed";
-      missedMorningCount++;
-
-    } else if (status === "missed-night") {
-      displayText = "missed (night)";
-      cssClass = "status-missed";
-      missedNightCount++;
-
-    } else {
-      displayText = "missed (no log)";
-      cssClass = "status-missed";
-      missedMorningCount++; // default bucket
+      caregivers.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        select.appendChild(opt);
+      });
     }
 
-    const row = `
-      <tr data-status="${status}">
-        <td>${person.elderly_username}</td>
-        <td>${person.name}</td>
-        <td>${person.condition || "-"}</td>
-        <td>${person.language_preference}</td>
-        <td class="${cssClass}">${displayText}</td>
-      </tr>
-    `;
-
-    body.insertAdjacentHTML("beforeend", row);
-  });
-
-  // Update Summary Cards
-  document.getElementById("totalElderly").textContent = totalCount;
-  document.getElementById("checkedInToday").textContent = checkedCount;
-  document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
-}
-  
-  function populateCaregiverFilter() {
-    const select = document.getElementById("caregiverSelect");
-
-    const caregivers = [...new Set(elderlyData.map(e => e.caregiver).filter(Boolean))];
-
-    caregivers.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
-      select.appendChild(opt);
+    // --- Filters ---
+    document.getElementById("filterSelect").addEventListener("change", e => {
+      const status = e.target.value;
+      renderDashboard(status);
     });
-  }
 
-  // ---------------- FILTERING ----------------
-  document.getElementById("filterSelect").addEventListener("change", e => {
-    const value = e.target.value;
-    const rows = document.querySelectorAll("#elderlyBody tr");
-
-    renderDashboard();
-
-    rows.forEach(r => {
-      const status = r.dataset.status;
-
-      if (value === "all") {
-        r.style.display = "";
-      } else if (value === "checked") {
-        r.style.display = status === "checked" ? "" : "none";
-      } else if (value === "missed-morning") {
-        r.style.display = status === "missed-morning" ? "" : "none";
-      } else if (value === "missed-night") {
-        r.style.display = status === "missed-night" ? "" : "none";
-      }
+    document.getElementById("caregiverSelect").addEventListener("change", () => {
+      const status = document.getElementById("filterSelect").value;
+      renderDashboard(status);
     });
-  });
 
-  document.getElementById("caregiverSelect").addEventListener("change", () => {
-    renderDashboard();
-  });
-
-
-  load();
-</script>
-
-
+    load();
+  </script>
 </body>
+
 </html>

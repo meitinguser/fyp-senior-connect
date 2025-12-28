@@ -506,7 +506,7 @@ app.get('/api/caregiver/elderly', async (req, res) => {
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
-      caregiver: row.caregiver_name || row.u_caregiver_name || "NA"
+      caregiver: row.caregiver || row.u_caregiver || "NA"
 
     }));
 
