@@ -138,10 +138,15 @@
     let elderlyData = [];
     let checkinLogs = [];
 
+    // Define check-in ranges
+    const MORNING_RANGE = ["06:00", "12:00"];
+    const NIGHT_RANGE = ["16:00", "22:00"];
+
     function todayDate() {
       return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     }
 
+    // --- Fetch data from ServiceNow via API ---
     async function load() {
       const eRes = await fetch("/api/caregiver/elderly");
       const cRes = await fetch("/api/caregiver/checkins");
@@ -153,24 +158,34 @@
       checkinLogs = cData.checkins || [];
 
       populateCaregiverFilter();
-      renderDashboard();
+      const statusFilter = document.getElementById("filterSelect").value;
+      renderDashboard(statusFilter);
     }
 
-    function getTodayStatus(logs) {
+    // --- Determine today's status based on ranges ---
+    function getTodayStatus(logs, morningRange = MORNING_RANGE, nightRange = NIGHT_RANGE) {
       const today = todayDate();
+
+      // 1️⃣ Check if a "checked in" log exists today
       for (let log of logs) {
         const logDate = log.timestamp || log.sys_created_on;
         if (!logDate) continue;
         if (logDate.slice(0, 10) === today) {
-          const status = log.status.toLowerCase();
-          if (status.includes("checked in")) return "checked";
-          if (status.includes("missed (morning)")) return "missed-morning";
-          if (status.includes("missed (night)")) return "missed-night";
+          if ((log.status || "").toLowerCase().includes("checked in")) return "checked";
         }
       }
-      return "none";
+
+      // 2️⃣ No log today → check if past end of ranges
+      const now = new Date();
+      const nowTime = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
+
+      if (nowTime > morningRange[1] && nowTime < nightRange[0]) return "missed-morning";
+      if (nowTime > nightRange[1]) return "missed-night";
+
+      return "none"; // Not yet missed
     }
 
+    // --- Render dashboard ---
     function renderDashboard(statusFilter = "all") {
       const body = document.getElementById("elderlyBody");
       body.innerHTML = "";
@@ -208,9 +223,8 @@
           cssClass = "status-missed";
           missedNightCount++;
         } else {
-          displayText = "missed (no log)";
-          cssClass = "status-missed";
-          missedMorningCount++; // default bucket
+          displayText = "no log yet";
+          cssClass = "";
         }
 
         const row = `
@@ -223,20 +237,19 @@
           <td class="${cssClass}">${displayText}</td>
         </tr>
       `;
-
         body.insertAdjacentHTML("beforeend", row);
       });
 
-      // Update summary cards based on filtered rows
       document.getElementById("totalElderly").textContent = totalCount;
       document.getElementById("checkedInToday").textContent = checkedCount;
       document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
     }
 
+    // --- Populate caregiver filter ---
     function populateCaregiverFilter() {
       const select = document.getElementById("caregiverSelect");
+      select.innerHTML = '<option value="all">All Caregivers</option>';
       const caregivers = [...new Set(elderlyData.map(e => e.caregiver).filter(Boolean))];
-
       caregivers.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c;
@@ -245,7 +258,7 @@
       });
     }
 
-    // --- Filters ---
+    // --- Event listeners for filters ---
     document.getElementById("filterSelect").addEventListener("change", e => {
       const status = e.target.value;
       renderDashboard(status);
@@ -256,7 +269,12 @@
       renderDashboard(status);
     });
 
-    load();
+    // --- Auto-refresh every minute ---
+    load().then(() => {
+      setInterval(() => {
+        load();
+      }, 60000);
+    });
   </script>
 </body>
 
