@@ -281,7 +281,7 @@ app.post('/api/translate', async (req, res) => {
         const keys = ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT', 'sorting', 'basket',
           'puzzle', 'puzzleTitle', 'drawAgain', 'fortune', 'text1', 'text2',
           'text3', 'text4', 'text51', 'text52', 'text6', 'omi1', 'omi2',
-          'omi3', 'omi4', 'omi5', 'emergency', 'drawStickBtn'];
+          'omi3', 'omi4', 'omi5', 'emergency', 'drawStickBtn', 'emergencyConfirm', 'emergencySuccess', 'emergencyError'];
         const key = keys[index];
         return translationCache[targetLang][key] || text;
       });
@@ -327,7 +327,10 @@ app.post('/api/translate', async (req, res) => {
       omi4: translations[20],
       omi5: translations[21],
       emergency: translations[22],
-      drawStickBtn: translations[23]
+      drawStickBtn: translations[23],
+      emergencyConfirm: translations[24],
+      emergencySuccess: translations[25],
+      emergencyError: translations[26]
     };
 
     // Store in memory cache
@@ -610,6 +613,72 @@ app.post("/checkin", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// ------------------ EMERGENCY ALERT ENDPOINT ------------------
+// Triggers ServiceNow workflow to send Telegram message to caregiver
+app.post("/emergency", async (req, res) => {
+  // Check if user if authenticated 
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({
+      success: false,
+      error: "Not authenticated"
+    });
+  }
+
+  try {
+    const user = req.user;
+
+    console.log(`[EMERGENCY] Alert triggered by: ${user.name} (${user.sys_id})`);
+
+    // Get caregiver information from elderly record
+    const caregiverName = user.caregiver_name || user.u_caregiver_name || "Unknown Caregiver";
+    const elderlyCondition = user.condition_special_consideration || user.u_condition_special_consideration || "None";
+
+    // Prepare emergency data for ServiceNow workflow
+    const emergencyPayload = {
+      // Elderly person details
+      name: user.name,
+      username: user.u_elderly_username || "",
+      condition: elderlyCondition,
+
+      // Caregiver details
+      caregiver: caregiverName,
+
+      // Emergency details
+      timestamp: getSingaporeTimestamp()
+    };
+
+    // Creates a record in a customer emergency table that triggers workflow
+    const emergencyResponse = await axios.post(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_emergency_alerts`,
+      emergencyPayload,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+
+    console.log(`[EMERGENCY] Alert created in ServiceNow:`, emergencyResponse.data.result.sys_id);
+
+    res.json({
+      success: true,
+      message: "Emergency alert sent successfully",
+      alert_id: emergencyResponse.data.result.sys_id,
+      timestamp: emergencyPayload.emergency_timestamp
+    });
+
+  } catch (err) {
+    console.error("[EMERGENCY] Error:", err.response?.data || err.message);
+
+    // Return detailed error for troubleshooting
+    res.status(500).json({
+      success: false,
+      error: "Failed to send emergency alert",
+      details: err.response?.data || err.message
+    });
+  }
+});
+
 
 // ------------------ GRACEFUL SHUTDOWN ------------------
 // Save cache to file when server shuts down 

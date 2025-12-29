@@ -150,7 +150,10 @@ let transText = {
         omi4: "Your fortune: Good day for a good day 😄",
         omi5: "Your fortune: Peaceful day 😊",
         emergency: "🚨 Emergency 🚨",
-        drawStickBtn: "Get Today's Fortune!"
+        drawStickBtn: "Get Today's Fortune!",
+        emergencyConfirm: "⚠️ Are you sure you want to send an EMERGENCY ALERT?\n\nYour caregiver will be notified immediately via Telegram.",
+        emergencySuccess: "✅ Emergency alert sent! Your caregiver has been notified.",
+        emergencyError: "❌ Failed to send emergency alert. Please call your caregiver directly."
     },
     zh: null,
     ms: null,
@@ -625,7 +628,48 @@ function initOmikuji() {
 }
 
 //  ------------------ EMERGENCY BUTTON ------------------
-// For future task to post to servicenow
+// Sends emergency alert to ServiceNow which triggers Telegram notification via Flow
+async function confirmEmergency() {
+    const confirmMsg = currentContent.emergencyConfirm || "⚠️ Are you sure you want to send an EMERGENCY ALERT?\n\nYour caregiver will be notified immediately via Telegram.";
+    const successMsg = currentContent.emergencySuccess || "✅ Emergency alert sent! Your caregiver has been notified.";
+    const errorMsg = currentContent.emergencyError || "❌ Failed to send emergency alert. Please call your caregiver directly.";
+
+    // Confirm with user 
+    if (!confirm(confirmMsg)) {
+        console.log("[EMERGENCY] User cancelled emergency alert");
+        return;
+    }
+
+    console.log("[EMERGENCY] Sending emergency alert to ServiceNow...");
+
+    try {
+        // Send emergency alert to backend
+        const response = await fetch("/emergency", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            console.log("[EMERGENCY] Alert sent successfully:", data);
+
+            // Show success message
+            alert(successMsg);
+
+        } else {
+            console.error("[EMERGENCY] Failed to send alert:", data);
+            alert(errorMsg + "\n\nError: " + (data.error || "Unknown error"));
+        }
+
+    } catch (err) {
+        // Handle network or other errors
+        console.error("[EMERGENCY] Network error:", err);
+        alert(errorMsg + "\n\nPlease check your internet connection and try again.");
+    }
+}
 
 // ------------------ DOMCONTENTLOADED ------------------
 document.addEventListener("DOMContentLoaded", async () => {
