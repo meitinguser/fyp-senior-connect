@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -179,6 +180,7 @@
         <th>Language Preference</th>
         <th>Caregiver</th>
         <th>Check-In Status</th>
+        <th>Pause/Active</th>
       </tr>
     </thead>
     <tbody id="elderlyBody">
@@ -384,6 +386,25 @@
           displayText = "no log yet";
           cssClass = "";
         }
+        // Decide pause state from the latest log for today
+      let isPaused = false;
+      const today = todayDate();
+
+      // logs are already filtered for this person; sort by timestamp descending
+      const todaysLogs = logs.filter(log => {
+        const logDate = (log.timestamp || "").slice(0, 10);
+        return logDate === today;
+      });
+
+      if (todaysLogs.length > 0) {
+        // assuming /api/caregiver/checkins returns newest first, take index 0
+        const latest = todaysLogs[0];
+        if (latest.is_check_in_paused === true || latest.is_check_in_paused === "true") {
+          isPaused = true;
+        }
+      }
+
+      const buttonLabel = isPaused ? "Active" : "Pause";
 
         const row = `
         <tr data-status="${status}">
@@ -393,6 +414,13 @@
           <td>${createLanguageDropdown(person)}</td>
           <td>${person.caregiver}</td>
           <td class="${cssClass}">${displayText}</td>
+          <td>
+            <button class="pause-btn"
+                    data-name="${person.name}"
+                    data-status="${status}">
+              ${buttonLabel}
+            </button>
+          </td>
         </tr>
       `;
         body.insertAdjacentHTML("beforeend", row);
@@ -443,6 +471,45 @@
       const status = document.getElementById("filterSelect").value;
       renderDashboard(status);
     });
+
+     // Pause and Active Button
+  document.addEventListener("click", async (e) => {
+  if (!e.target.classList.contains("pause-btn")) return;
+
+  const btn = e.target;
+  const elderlyName = btn.getAttribute("data-name");
+  const currentStatus = btn.getAttribute("data-status");
+
+  const currentlyPauseLabel = btn.textContent.trim().toLowerCase() === "pause";
+  const targetState = currentlyPauseLabel ? "paused" : "active";
+
+  try {
+    const res = await fetch("/api/caregiver/toggle-pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        elderly_name: elderlyName,
+        target_state: targetState,
+        current_status: currentStatus,
+      }),
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      alert("Failed to update pause status.");
+      return;
+    }
+
+    // Toggle label immediately
+    btn.textContent = currentlyPauseLabel ? "Active" : "Pause";
+
+    // Optionally reload logs as well
+    // load();
+  } catch (err) {
+    console.error("Pause toggle error", err);
+    alert("Error talking to server.");
+  }
+});
 
     // --- Auto-refresh every minute ---
     load().then(() => {

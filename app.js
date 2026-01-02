@@ -536,7 +536,8 @@ app.get('/api/caregiver/checkins', async (req, res) => {
     const cleaned = logs.map(row => ({
       timestamp: row.sys_created_on,
       elderly_name: row.elderly_name || row.name || row.u_elderly || "",
-      status: row.status || row.u_status || ""
+      status: row.status || row.u_status || "",
+      is_check_in_paused: row.is_check_in_paused
     }));
 
     res.json({ success: true, checkins: cleaned });
@@ -742,6 +743,100 @@ app.post("/emergency", async (req, res) => {
       error: "Failed to send emergency alert",
       details: err.response?.data || err.message
     });
+  }
+});
+
+// Find elderly record in ServiceNow by name
+async function findElderlyByName(elderly_name) {
+  try {
+    const res = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: {
+          sysparm_query: `name=${elderly_name}`,
+          sysparm_limit: 1,
+        },
+      }
+    );
+
+    if (!res.data?.result?.length) {
+      console.warn(`[Elderly] Not found by name: ${elderly_name}`);
+      return null;
+    }
+
+    return res.data.result[0];
+  } catch (err) {
+    console.error("[Elderly] findElderlyByName error:", err.response?.data || err.message);
+    throw err;
+  }
+}
+
+//Pause and Active
+// ----------------------------------------
+// TOGGLE pause / resume for an elderly
+// Logs into x_1855398_elderl_0_elderly_check_in_log
+// ----------------------------------------
+// ----------------------------------------
+// TOGGLE pause / resume for an elderly
+// Only flips is_check_in_paused in log table
+// ----------------------------------------
+app.post("/api/caregiver/toggle-pause", async (req, res) => {
+  const { elderly_name, target_state } = req.body;
+
+  if (!elderly_name || !target_state) {
+    return res
+      .status(400)
+      .json({ success: false, message: "elderly_name and target_state required" });
+  }
+
+  const makePaused = target_state === "paused";
+
+  try {
+    // 1) Copy latest Status and insert log (your existing code, shortened)
+    const latestLogs = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: {
+          sysparm_query: `name=${elderly_name}^ORDERBYDESCsys_created_on`,
+          sysparm_limit: 1,
+        },
+      }
+    );
+    const latest = latestLogs.data.result && latestLogs.data.result[0];
+    const statusToCopy = latest ? (latest.status || latest.u_status || "") : "";
+
+    await axios.post(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      {
+        name: elderly_name,
+        timestamp: getSingaporeTimestamp(),
+        is_check_in_paused: makePaused ? true : false,
+        status: statusToCopy,
+      },
+      { auth: { username: SN_USER, password: SN_PASS } }
+    );
+
+    // 2) Update elderly_datas (x_1855398_elderl_0_elderly_data) flag
+    const elderly = await findElderlyByName(elderly_name);
+    if (elderly && elderly.sys_id) {
+      await axios.patch(
+        `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderly.sys_id}`,
+        {
+          is_check_in_paused: makePaused ? true : false, // or u_is_check_in_paused
+        },
+        { auth: { username: SN_USER, password: SN_PASS } }
+      );
+    }
+
+    res.json({
+      success: true,
+      paused: makePaused,
+    });
+  } catch (err) {
+    console.error("Pause toggle error:", err.response?.data || err.message);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
