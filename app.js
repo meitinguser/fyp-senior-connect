@@ -9,6 +9,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const fs = require("fs");
+const { name } = require("ejs");
 
 const app = express();
 const PORT = process.env.PORTnumber || 3000;
@@ -504,6 +505,7 @@ app.get('/api/caregiver/elderly', async (req, res) => {
     const data = await snGet("x_1855398_elderl_0_elderly_data");
 
     const cleaned = data.map(row => ({
+      id: row.sys_id || row.u_sys_id || "NA",
       name: row.name || row.u_name || "NA",
       elderly_username: row.elderly_username || row.u_elderly_username || "NA",
       password_hash: row.password_hash || row.u_password_hash || "NA",
@@ -544,7 +546,70 @@ app.get('/api/caregiver/checkins', async (req, res) => {
   }
 });
 
-// ------------------ GET LANGUAGE PREFERENCE ------------------
+// Update Language Preference
+app.put("/api/caregiver/elderly/:sys_id/language", async (req, res) => {
+  const { sys_id } = req.params;
+  const { language_preference } = req.body;
+
+  if (!sys_id) {
+    return res.status(400).json({
+      success: false,
+      error: "Elderly sys_id is required"
+    });
+  }
+
+  if (!language_preference) {
+    return res.status(400).json({
+      success: false,
+      error: "Language preference is required"
+    })
+  }
+
+  const validLanguages = ["English", "Chinese", "Malay", "Tamil"];
+  if (!validLanguages.includes(language_preference)) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid language. Must be: English, Chinese, Malay, or Tamil"
+    });
+  }
+
+  try {
+    console.log(`[LANGUAGE UPDATE] Updating sys_id: ${sys_id} to language: ${language_preference}`);
+
+    const updateResponse = await axios.put(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${sys_id}`,
+      {
+        language_preference: language_preference,
+      },
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+
+    console.log(`[LANGUAGE UPDATE] Successfully updated to: ${language_preference}`);
+
+    res.json({
+      success: true,
+      message: "Language preference updated successfully",
+      data: {
+        sys_id: sys_id,
+        language_preference: language_preference,
+        updated_record: updateResponse.data.result
+      }
+    });
+  } catch (err) {
+    console.error("[LANGUAGE UPDATE] Error:", err.response?.data || err.message);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to update language preference",
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// ----------------- GET LANGUAGE PREFERENCE ------------------
 // Fetches the elderly person's preferred language from ServiceNow by sys_id
 app.get("/api/language-preference/:sys_id", async (req, res) => {
   const { sys_id } = req.params;
@@ -645,7 +710,8 @@ app.post("/emergency", async (req, res) => {
       caregiver: caregiverName,
 
       // Emergency details
-      timestamp: getSingaporeTimestamp()
+      timestamp: getSingaporeTimestamp(),
+      status: "New"
     };
 
     // Creates a record in a customer emergency table that triggers workflow

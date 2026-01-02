@@ -77,6 +77,58 @@
       justify-content: flex-end;
       gap: 15px;
     }
+
+    /* Language dropdown styling */
+    .language-select {
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .language-select:hover {
+      border-color:#002d62;
+    }
+
+    .language-select:focus {
+      outline: none;
+      border-color: #002d62;
+      box-shadow: 0 0 5px rgba(0, 45, 98, 0.3);
+    }
+
+    .language-select.updating {
+      background: #f0f0f0;
+      cursor: wait;
+    }
+
+    .language-select.success {
+      border-color: green;
+      background: #f0f0f0;
+    }
+
+    .language-select.error {
+      border-color: red;
+      background: #fff0f0;
+    }
+
+    /* Status message styling */
+    .update-status {
+      font-size: 12px;
+      margin-top: 4px;
+      font-style: italic;
+    }
+    
+    .update-status.success {
+      color: green;
+    }
+
+    .update-status.error {
+      color: red;
+    }
+
   </style>
 </head>
 
@@ -185,6 +237,112 @@
       return "none"; // Not yet missed
     }
 
+    // --- Update language preference in servicenow ---
+    async function updateLanguagePreference(sysId, newLanguage, selectElement, statusElement) {
+      // Show updating state
+      selectElement.classList.add('updating');
+      selectElement.disabled = true;
+      if (statusElement) {
+        statusElement.textContent = "Updating...";
+        statusElement.className = "update-status";
+      }
+
+      try {
+        console.log(`Updating language for sys_id: ${sysId} to: ${newLanguage}`);
+
+        const response = await fetch(`/api/caregiver/elderly/${sysId}/language`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            language_preference: newLanguage
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          // Success
+          console.log("Language updated successfully:", data);
+          selectElement.classList.remove('updating');
+          selectElement.classList.add('success');
+
+          if (statusElement) {
+            statusElement.textContent = "Updated";
+            statusElement.className = "update-status success";
+          }
+
+          // Update local data
+          const person = elderlyData.find(e => e.id === sysId);
+          if (person) {
+            person.language_preference = newLanguage;
+          }
+
+          // Remove success styling after 3 seconds
+          setTimeout(() => {
+            selectElement.classList.remove('success');
+            if (statusElement) statusElement.textContent = "";
+          }, 3000);
+
+        } else {
+          // Error
+          console.error("Failed to update language:", data);
+          selectElement.classList.remove('updating');
+          selectElement.classList.add('error');
+
+          if (statusElement) {
+            statusElement.textContent = "Failed: " + (data.error || "Unknown error");
+            statusElement.className = "update-status error";
+          }
+
+          // Remove error styling after 5 seconds
+          setTimeout(() => {
+            selectElement.classList.remove('error');
+            if (statusElement) statusElement.textContent = "";
+          }, 5000);
+        } 
+      } catch (err) {
+        console.error("Network error updating language:", err);
+        selectElement.classList.remove('updating');
+        selectElement.classList.add('error');
+
+        if (statusElement) {
+          statusElement.textContent = "Network error";
+          statusElement.className = "update-status error";
+        }
+
+        setTimeout(() => {
+          selectElement.classList.remove('error');
+          if (statusElement) statusElement.textContent = "";
+        }, 5000);
+      } finally {
+        selectElement.disabled = false; 
+      }
+    }
+
+    // --- Create language dropdown ---
+    function createLanguageDropdown(person) {
+      const currentLang = person.language_preference || "English";
+      const languages = ["English", "Chinese", "Malay", "Tamil"];
+
+      const containerId = `lang-container-${person.id}`;
+
+      let html = `<div id="${containerId}">`;
+      html += `<select class="language-select" data-sys-id="${person.id}" data-current-lang="${currentLang}">`;
+      
+      languages.forEach(lang => {
+        const selected = lang === currentLang ? 'selected' : '';
+        html += `<option value="${lang}" ${selected}>${lang}</option>`;
+      });
+      
+      html += `</select>`;
+      html += `<div class="update-status" id="status-${person.id}"></div>`;
+      html += `</div>`;
+      
+      return html;
+    }
+
     // --- Render dashboard ---
     function renderDashboard(statusFilter = "all") {
       const body = document.getElementById("elderlyBody");
@@ -232,12 +390,29 @@
           <td>${person.elderly_username}</td>
           <td>${person.name}</td>
           <td>${person.condition || "-"}</td>
-          <td>${person.language_preference}</td>
+          <td>${createLanguageDropdown(person)}</td>
           <td>${person.caregiver}</td>
           <td class="${cssClass}">${displayText}</td>
         </tr>
       `;
         body.insertAdjacentHTML("beforeend", row);
+      });
+
+      // Add event listeners to all language dropdowns
+      document.querySelectorAll('.language-select').forEach(select => {
+        select.addEventListener('change', function(e) {
+          const sysId = this.dataset.sysId;
+          const newLanguage = this.value;
+          const statusElement = document.getElementById(`status-${sysId}`);
+
+          // Confirm change 
+          if (confirm(`Change language preference to ${newLanguage}?`)) {
+            updateLanguagePreference(sysId, newLanguage, this, statusElement);
+          } else {
+            // Revert to previous value if cancelled
+            this.value = this.dataset.currentLang;
+          }
+        });
       });
 
       document.getElementById("totalElderly").textContent = totalCount;
