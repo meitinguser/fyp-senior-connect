@@ -504,6 +504,7 @@ app.get('/api/caregiver/elderly', async (req, res) => {
     const data = await snGet("x_1855398_elderl_0_elderly_data");
 
     const cleaned = data.map(row => ({
+      sys_id: row.sys_id || row.u_sys_id || "NA",
       name: row.name || row.u_name || "NA",
       elderly_username: row.elderly_username || row.u_elderly_username || "NA",
       password_hash: row.password_hash || row.u_password_hash || "NA",
