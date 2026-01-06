@@ -53,9 +53,12 @@ copy the path to the json file
 - Name shows on navbar after logging in.
 - Navbar improved
 
-29/12/2025 [mei ting] (1)
+29/12/2025 [mei ting] (1)\
 - Fixed caregiver.ejs check in filter
-29/12/2025 [mei ting] (2)
+29/12/2025 [mei ting] (2)\
 - Fix readme
 29/12/2025 [mei ting] (3)
 - Redid check for (every 15 minutes like formerly on Appscript) code to show missed check ins
+
+6-1-2026 [mei ting]
+Added in point system when check in

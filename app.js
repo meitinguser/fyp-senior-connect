@@ -658,27 +658,52 @@ app.post("/logout", (req, res) => {
 // Check-in - Uses authenticated user's sys_id
 app.post("/checkin", async (req, res) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ success: false, error: "Not authenticated" });
+    return res.status(401).json({ success: false, error: "not authenticated" });
   }
 
   try {
+    // 1️⃣ Get current points
+    const elderly = await getElderlyBySysId(req.user.sys_id);
+    const currentPoints = Number(elderly.u_points || 0);
+
+    // 2️⃣ Add points
+    const pointsEarned = 10;
+    const newPoints = currentPoints + pointsEarned;
+
+    // 3️⃣ Update elderly record
+    await axios.patch(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${req.user.sys_id}`,
+      {
+        u_points: newPoints
+      },
+      { auth: { username: SN_USER, password: SN_PASS } }
+    );
+
+    // 4️⃣ Log check-in
     await axios.post(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
       {
         u_elderly: req.user.sys_id,
-        name: req.user.name,
         status: "Checked In",
+        u_points_awarded: pointsEarned,
+        name: req.user.name,
         timestamp: getSingaporeTimestamp()
       },
       { auth: { username: SN_USER, password: SN_PASS } }
     );
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      pointsEarned,
+      totalPoints: newPoints
+    });
+
   } catch (err) {
-    console.error("Check-in error", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Check-in error:", err.response?.data || err.message);
+    res.status(500).json({ success: false });
   }
 });
+
 
 // ------------------ EMERGENCY ALERT ENDPOINT ------------------
 // Triggers ServiceNow workflow to send Telegram message to caregiver
