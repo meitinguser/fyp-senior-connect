@@ -739,52 +739,27 @@ app.post("/logout", (req, res) => {
 // Check-in - Uses authenticated user's sys_id
 app.post("/checkin", async (req, res) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ success: false, error: "not authenticated" });
+    return res.status(401).json({ success: false, error: "Not authenticated" });
   }
 
   try {
-    // 1️⃣ Get current points
-    const elderly = await getElderlyBySysId(req.user.sys_id);
-    const currentPoints = Number(elderly.u_points || 0);
-
-    // 2️⃣ Add points
-    const pointsEarned = 10;
-    const newPoints = currentPoints + pointsEarned;
-
-    // 3️⃣ Update elderly record
-    await axios.patch(
-      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${req.user.sys_id}`,
-      {
-        u_points: newPoints
-      },
-      { auth: { username: SN_USER, password: SN_PASS } }
-    );
-
-    // 4️⃣ Log check-in
     await axios.post(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
       {
         u_elderly: req.user.sys_id,
-        status: "Checked In",
-        u_points_awarded: pointsEarned,
         name: req.user.name,
+        status: "Checked In",
         timestamp: getSingaporeTimestamp()
       },
       { auth: { username: SN_USER, password: SN_PASS } }
     );
 
-    res.json({
-      success: true,
-      pointsEarned,
-      totalPoints: newPoints
-    });
-
+    res.json({ success: true });
   } catch (err) {
-    console.error("Check-in error:", err.response?.data || err.message);
-    res.status(500).json({ success: false });
+    console.error("Check-in error", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // ------------------ EMERGENCY ALERT ENDPOINT ------------------
 // Triggers ServiceNow workflow to send Telegram message to caregiver
@@ -817,8 +792,7 @@ app.post("/emergency", async (req, res) => {
       caregiver: caregiverName,
 
       // Emergency details
-      timestamp: getSingaporeTimestamp(),
-      status: "New"
+      timestamp: getSingaporeTimestamp()
     };
 
     // Creates a record in a customer emergency table that triggers workflow
@@ -882,24 +856,14 @@ async function findElderlyByName(elderly_name) {
 // ----------------------------------------
 // TOGGLE pause / resume for an elderly
 // Logs into x_1855398_elderl_0_elderly_check_in_log
-// ----------------------------------------
-// ----------------------------------------
-// TOGGLE pause / resume for an elderly
-// Only flips is_check_in_paused in log table
-// ----------------------------------------
 app.post("/api/caregiver/toggle-pause", async (req, res) => {
-  const { elderly_name, target_state } = req.body;
-
-  if (!elderly_name || !target_state) {
-    return res
-      .status(400)
-      .json({ success: false, message: "elderly_name and target_state required" });
-  }
+  const { elderly_name, target_state, absence_reason } = req.body;
 
   const makePaused = target_state === "paused";
 
   try {
-    // 1) Copy latest Status and insert log (your existing code, shortened)
+    const elderly = await findElderlyByName(elderly_name);
+
     const latestLogs = await axios.get(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
       {
@@ -913,33 +877,31 @@ app.post("/api/caregiver/toggle-pause", async (req, res) => {
     const latest = latestLogs.data.result && latestLogs.data.result[0];
     const statusToCopy = latest ? (latest.status || latest.u_status || "") : "";
 
+    console.log("[TOGGLE] makePaused:", makePaused);
+    console.log("[TOGGLE] absence_reason from client:", JSON.stringify(absence_reason));
+
+    const payload = {
+      name: elderly_name,
+      u_elderly: elderly ? elderly.sys_id : "",
+      timestamp: getSingaporeTimestamp(),
+      is_check_in_paused: makePaused ? true : false,
+      status: statusToCopy,
+    };
+
+    if (makePaused && absence_reason && absence_reason.trim()) {
+      payload.absence_reason = absence_reason.trim();
+    }
+
+    console.log("[TOGGLE] payload sent to SN:", payload);
+
     await axios.post(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
-      {
-        name: elderly_name,
-        timestamp: getSingaporeTimestamp(),
-        is_check_in_paused: makePaused ? true : false,
-        status: statusToCopy,
-      },
+      payload,
       { auth: { username: SN_USER, password: SN_PASS } }
     );
 
-    // 2) Update elderly_datas (x_1855398_elderl_0_elderly_data) flag
-    const elderly = await findElderlyByName(elderly_name);
-    if (elderly && elderly.sys_id) {
-      await axios.patch(
-        `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderly.sys_id}`,
-        {
-          is_check_in_paused: makePaused ? true : false, // or u_is_check_in_paused
-        },
-        { auth: { username: SN_USER, password: SN_PASS } }
-      );
-    }
 
-    res.json({
-      success: true,
-      paused: makePaused,
-    });
+    res.json({ success: true, paused: makePaused });
   } catch (err) {
     console.error("Pause toggle error:", err.response?.data || err.message);
     res.status(500).json({ success: false, message: "Server error" });

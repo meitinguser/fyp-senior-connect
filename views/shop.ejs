@@ -5,31 +5,48 @@
   <title>Senior Connect - Shop</title>
   <link rel="stylesheet" href="/shop.css">
 </head>
-<body>
-  <div class="shop-header">
-    <h1>Welcome, <%= user.name %>!</h1>
-    <p>Your points: <span id="points"><%= user.u_points || 0 %></span></p>
-  </div>
 
-  <div id="shop-items">
+<body>
+
+  <header class="shop-header">
+    <h1>Hello, <span class="username"><%= user.name %></span> 👋</h1>
+    <div class="points-pill">
+      ⭐ <span id="points"><%= user.u_points || 0 %></span> Points
+    </div>
+  </header>
+
+  <main class="shop-grid">
     <% items.forEach(item => { %>
-      <div class="shop-item" data-id="<%= item.id %>" data-cost="<%= item.cost %>">
-        <p class="item-name"><%= item.name %></p>
-        <p class="item-cost">Cost: <%= item.cost %> pts</p>
-        <button class="buy-btn">Buy</button>
+      <div class="shop-card"
+           data-id="<%= item.id %>"
+           data-name="<%= item.name %>"
+           data-cost="<%= item.cost %>">
+
+        <div class="item-icon">🎁</div>
+
+        <div class="item-info">
+          <h2 class="item-name"><%= item.name %></h2>
+          <p class="item-desc"><%= item.description || "Comfort & care item" %></p>
+        </div>
+
+        <div class="item-footer">
+          <span class="item-cost"><%= item.cost %> pts</span>
+          <button class="buy-btn">Buy</button>
+        </div>
       </div>
     <% }) %>
-  </div>
+  </main>
 
-  <div id="footer-div">
-  <a href="/" class="back-btn"><- Back to Game</a>
-</div>
+  <footer class="shop-footer">
+    <a href="/" class="back-btn">← Back to Game</a>
+  </footer>
 
   <script>
     document.querySelectorAll(".buy-btn").forEach(btn => {
       btn.addEventListener("click", async e => {
-        const parent = e.target.closest(".shop-item");
-        const itemId = parent.dataset.id;
+        const card = e.target.closest(".shop-card");
+        const itemId = card.dataset.id;
+        const itemName = card.dataset.name;
 
         const res = await fetch("/shop/buy", {
           method: "POST",
@@ -40,13 +57,13 @@
         const data = await res.json();
         if (data.success) {
           document.getElementById("points").textContent = data.newPoints;
-          alert("Purchase successful!");
+          alert(`🎉 You bought a ${itemName}!`);
         } else {
-          alert(data.message || "Purchase failed!");
+          alert(data.message || "Not enough points 😢");
         }
       });
     });
   </script>
+
 </body>
-    
 </html>

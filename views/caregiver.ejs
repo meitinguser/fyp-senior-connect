@@ -130,6 +130,41 @@
       color: red;
     }
 
+/* Base button */
+.pause-btn {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Active = blue */
+.pause-btn.active {
+  background: #e6f0ff;
+  color: #0055cc;
+  border-color: #0055cc;
+  font-weight: bold;
+}
+
+/* Inactive = red */
+.pause-btn.inactive {
+  background: #ffe6e6;
+  color: #cc0000;
+  border-color: #cc0000;
+  font-weight: bold;
+}
+
+/* Hover effect */
+.pause-btn:hover {
+  box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.15);
+}
+
+/* Hover effect for inactive */
+.pause-btn.inactive:hover {
+  box-shadow: 0 0 0 2px rgba(176, 0, 32, 0.15);
+}
   </style>
 </head>
 
@@ -179,7 +214,7 @@
         <th>Condition</th>
         <th>Language Preference</th>
         <th>Check-In Status</th>
-        <th>Pause/Active</th>
+        <th>Active/Inactive</th>
       </tr>
     </thead>
     <tbody id="elderlyBody">
@@ -237,7 +272,7 @@
 
       return "none"; // Not yet missed
     }
-
+    
     // --- Update language preference in servicenow ---
     async function updateLanguagePreference(sysId, newLanguage, selectElement, statusElement) {
       // Show updating state
@@ -402,28 +437,30 @@
           isPaused = true;
         }
       }
+      
 
-      const buttonLabel = isPaused ? "Active" : "Pause";
+    const buttonLabel = isPaused ? "Inactive" : "Active";
+    const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
 
-        const row = `
-        <tr data-status="${status}">
-          <td>${person.elderly_username}</td>
-          <td>${person.name}</td>
-          <td>${person.condition || "-"}</td>
+    const row = `
+      <tr data-status="${status}">
+        <td>${person.elderly_username}</td>
+        <td>${person.name}</td>
+        <td>${person.condition || "-"}</td>
           <td>${createLanguageDropdown(person)}</td>
-          <td class="${cssClass}">${displayText}</td>
-          <td>
-            <button class="pause-btn"
-                    data-name="${person.name}"
-                    data-status="${status}">
-              ${buttonLabel}
-            </button>
-          </td>
-        </tr>
-      `;
+        <td class="${cssClass}">${displayText}</td>
+        <td>
+          <button class="${pauseClass}"
+                  data-name="${person.name}"
+                  data-status="${status}">
+            ${buttonLabel}
+          </button>
+        </td>
+      </tr>
+    `;
         body.insertAdjacentHTML("beforeend", row);
       });
-
+      
       // Add event listeners to all language dropdowns
       document.querySelectorAll('.language-select').forEach(select => {
         select.addEventListener('change', function(e) {
@@ -470,16 +507,39 @@
       renderDashboard(status);
     });
 
-     // Pause and Active Button
-  document.addEventListener("click", async (e) => {
+// Pause and Active Button
+document.addEventListener("click", async (e) => {
   if (!e.target.classList.contains("pause-btn")) return;
 
   const btn = e.target;
   const elderlyName = btn.getAttribute("data-name");
   const currentStatus = btn.getAttribute("data-status");
 
-  const currentlyPauseLabel = btn.textContent.trim().toLowerCase() === "pause";
-  const targetState = currentlyPauseLabel ? "paused" : "active";
+  const currentlyActiveLabel = btn.textContent.trim().toLowerCase() === "active";
+  const targetState = currentlyActiveLabel ? "paused" : "active";
+
+  let absenceReason = "";
+
+
+if (currentlyActiveLabel) {
+  while (true) {
+    const input = prompt("Please enter reason for inactivity:");
+
+    if (input === null) {
+      
+      return;
+    }
+
+    absenceReason = input.trim();
+
+    if (absenceReason) {
+      
+      break;
+    }
+
+    alert("Reason cannot be blank. Please enter a reason.");
+  }
+}
 
   try {
     const res = await fetch("/api/caregiver/toggle-pause", {
@@ -489,6 +549,7 @@
         elderly_name: elderlyName,
         target_state: targetState,
         current_status: currentStatus,
+        absence_reason: absenceReason,   
       }),
     });
 
@@ -498,16 +559,21 @@
       return;
     }
 
-    // Toggle label immediately
-    btn.textContent = currentlyPauseLabel ? "Active" : "Pause";
+    btn.textContent = currentlyActiveLabel ? "Inactive" : "Active";
 
-    // Optionally reload logs as well
-    // load();
+    if (currentlyActiveLabel) {
+      btn.classList.remove("active");
+      btn.classList.add("inactive");
+    } else {
+      btn.classList.remove("inactive");
+      btn.classList.add("active");
+    }
   } catch (err) {
     console.error("Pause toggle error", err);
     alert("Error talking to server.");
   }
 });
+
 
     // --- Auto-refresh every minute ---
     load().then(() => {
