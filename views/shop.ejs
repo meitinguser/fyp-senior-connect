@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Senior Connect - Shop</title>
+  <link rel="stylesheet" href="/shop.css">
+</head>
+<body>
+  <div class="shop-header">
+    <h1>Welcome, <%= user.name %>!</h1>
+    <p>Your points: <span id="points"><%= user.u_points || 0 %></span></p>
+  </div>
+
+  <div id="shop-items">
+    <% items.forEach(item => { %>
+      <div class="shop-item" data-id="<%= item.id %>" data-cost="<%= item.cost %>">
+        <p class="item-name"><%= item.name %></p>
+        <p class="item-cost">Cost: <%= item.cost %> pts</p>
+        <button class="buy-btn">Buy</button>
+      </div>
+    <% }) %>
+  </div>
+
+  <div id="footer-div">
+  <a href="/" class="back-btn"><- Back to Game</a>
+</div>
+
+  <script>
+    document.querySelectorAll(".buy-btn").forEach(btn => {
+      btn.addEventListener("click", async e => {
+        const parent = e.target.closest(".shop-item");
+        const itemId = parent.dataset.id;
+
+        const res = await fetch("/shop/buy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemId })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById("points").textContent = data.newPoints;
+          alert("Purchase successful!");
+        } else {
+          alert(data.message || "Purchase failed!");
+        }
+      });
+    });
+  </script>
+</body>
+    
+</html>

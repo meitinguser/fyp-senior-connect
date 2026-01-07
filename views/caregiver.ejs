@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Caregiver Dashboard</title>
+  <title>Senior Connect - Caregiver Dashboard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -178,7 +178,6 @@
         <th>Name</th>
         <th>Condition</th>
         <th>Language Preference</th>
-        <th>Caregiver</th>
         <th>Check-In Status</th>
         <th>Pause/Active</th>
       </tr>
@@ -412,7 +411,6 @@
           <td>${person.name}</td>
           <td>${person.condition || "-"}</td>
           <td>${createLanguageDropdown(person)}</td>
-          <td>${person.caregiver}</td>
           <td class="${cssClass}">${displayText}</td>
           <td>
             <button class="pause-btn"

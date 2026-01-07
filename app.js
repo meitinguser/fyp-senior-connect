@@ -455,6 +455,12 @@ app.get("/profile", (req, res) => {
   });
 });
 
+app.get("/caregiverlogin", (req, res) => {
+  res.render("caregiverlogin", {
+    user: req.user || null
+  });
+});
+
 
 // Caregiver
 app.get("/caregiver", (req, res) => {
@@ -495,11 +501,88 @@ app.post("/login", (req, res, next) => {
   })(req, res, next);
 });
 
+// ----------------------------------------
+// SHOP
+// 
+// ----------------------------------------
+const shopItems = [
+  { id: "neck_pillow", name: "Neck Pillow", cost: 200 },
+  { id: "blanket", name: "Blanket", cost: 300 },
+  { id: "tea_sampler", name: "Tea Sampler", cost: 150 },
+  { id: "calendar", name: "Large Print Calendar", cost: 100 },
+  { id: "warm_socks", name: "Warm Socks", cost: 80 },
+  { id: "hand_cream", name: "Hand Cream", cost: 50 },
+  { id: "puzzle_book", name: "Puzzle Book", cost: 180 },
+  { id: "magnifying_glass", name: "Magnifying Glass", cost: 250 },
+  { id: "walking_stick", name: "Walking Stick Accessory", cost: 350 },
+  { id: "water_bottle", name: "Reusable Water Bottle", cost: 100 }
+];
+
+
+app.get("/shop", (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect("/profile");
+
+  res.render("shop", {
+    user: req.user,
+    items: shopItems
+  });
+});
+
+app.post("/shop/buy", async (req, res) => {
+  if (!req.isAuthenticated()) return res.status(401).json({ success: false });
+
+  const { itemId } = req.body;
+  const item = shopItems.find(i => i.id === itemId);
+  if (!item) return res.status(404).json({ success: false, message: "Item not found" });
+
+  try {
+    // Get current points from ServiceNow
+    const elderly = await getElderlyBySysId(req.user.sys_id);
+
+    if ((elderly.u_points || 0) < item.cost) {
+      return res.json({ success: false, message: "Not enough points" });
+    }
+
+    // Deduct points
+    const newPoints = (elderly.u_points || 0) - item.cost;
+    await axios.patch(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderly.sys_id}`,
+      { u_points: newPoints },
+      { auth: { username: SN_USER, password: SN_PASS } }
+    );
+
+    res.json({ success: true, newPoints });
+  } catch (err) {
+    console.error("Shop purchase error:", err.message);
+    res.status(500).json({ success: false });
+  }
+});
 
 // ----------------------------------------
 // GET all elderly profiles
 // Normalizes ServiceNow fields → { id, name, age, etc }
 // ----------------------------------------
+
+app.get('/api/caregiver', async (req, res) => {
+  try {
+    const caregiverdata = await snGet("x_1855398_elderl_0_support_person");
+
+    const caregivercleaned = caregiverdata.map(row => ({
+      id: row.sys_id || row.u_sys_id || "NA",
+      name: row.name || row.u_name || "NA",
+      elderly_username: row.elderly_username || row.u_elderly_username || "NA",
+      password_hash: row.password_hash || row.u_password_hash || "NA",
+      condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
+      language_preference: row.language_preference || row.u_language_preference || "NA",
+    }));
+
+    res.json({ success: true, elderly: cleaned });
+  } catch (err) {
+    console.error("SN elderly fetch error:", err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
 app.get('/api/caregiver/elderly', async (req, res) => {
   try {
     const data = await snGet("x_1855398_elderl_0_elderly_data");
@@ -511,8 +594,6 @@ app.get('/api/caregiver/elderly', async (req, res) => {
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
-      caregiver: row.caregiver || row.u_caregiver || "NA"
-
     }));
 
     res.json({ success: true, elderly: cleaned });
