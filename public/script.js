@@ -389,23 +389,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         setTimeout(() => {
             fetch("/checkin", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            })
-                .then(r => r.json())
-                .then(data => {
-                    console.log("Puzzle check-in response:", data);
-                    const messageEl = document.getElementById("message");
-                    if (messageEl) messageEl.textContent = currentContent.text2 + `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 })
-                .catch(err => {
-                    console.error("Puzzle check-in error:", err);
-                    const messageEl = document.getElementById("message");
-                    if (messageEl) messageEl.textContent = currentContent.text3;
-                });
+                    .then(r => r.json())
+
+                    .then(data => {
+                    if (!data.success) {
+                        messageEl.textContent = "Couldn't connect. Try again 🙏";
+                        return;
+                    }
+
+                    messageEl.textContent = `${text2} ⭐ Total points: ${data.totalPoints}`;
+                    })
+                    .catch(err => {
+                        console.error("Check-in error:", err);
+                        messageEl.textContent = currentContent.text3;
+                    });
         }, 400);
     }
 
@@ -481,12 +482,15 @@ function initDragAndDrop() {
                     body: JSON.stringify(payload)
                 })
                     .then(r => r.json())
-                    
+
                     .then(data => {
-                        console.log("ServiceNow response:", data);                            
-                        if (data.success) {
-                            messageEl.textContent = `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
-                        }
+                    if (!data.success) {
+                        messageEl.textContent = "Couldn't connect. Try again 🙏";
+                        return;
+                    }
+
+                    messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;
+
                     })
                     .catch(err => {
                         console.error("Check-in error:", err);
@@ -613,22 +617,24 @@ function initOmikuji() {
             };
 
             fetch("/checkin", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
-                .then(r => r.json())
-                .then(data => {
-                    console.log("Omikuji check-in response:", data);
-                    if (messageEl) messageEl.textContent = currentContent.text2;
-                    if (data.success) {
-                            messageEl.textContent = `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
-                        }
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 })
-                .catch(err => {
-                    console.error("Omikuji check-in error:", err);
-                    if (messageEl) messageEl.textContent = currentContent.text3;
-                });
+                    .then(r => r.json())
+
+                    .then(data => {
+                    if (!data.success) {
+                        messageEl.textContent = "Couldn't connect. Try again 🙏";
+                        return;
+                    }
+
+                    messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;
+                    })
+                    .catch(err => {
+                        console.error("Check-in error:", err);
+                        messageEl.textContent = currentContent.text3;
+                    });
         }
     };
 }

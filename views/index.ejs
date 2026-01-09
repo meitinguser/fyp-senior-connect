@@ -46,8 +46,11 @@
     <div id="2ndHeaderText"></div>
     <div id="sticksTray"></div>
     <button id="drawStickBtn"></button>
-  </div>
+    
   <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
+  <div id="message" aria-live="polite"></div> <!-- message that appears after check-in completion -->
+
+  </div>
 
   <!-- PUZZLE GAME (HIDDEN UNTIL gameMode === 'puzzle') -->
   <div id="puzzleWrapper" style="display:none;">
@@ -58,6 +61,8 @@
       <div class="puzzle-piece"></div>
       <div class="puzzle-piece"></div>
     </div>
+      <div id="message" aria-live="polite"></div> <!-- message that appears after check-in completion -->
+
   </div>
 
 </body>
