@@ -16,49 +16,6 @@
   --text-main: #333;
 }
 
-/* ---------- NAVBAR --------- */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  /* Pushes content to the far left and right */
-  align-items: center;
-  /* Vertically centers the items */
-  background-color: #333;
-  padding: 10px 10px;
-  color: white;
-}
-
-.nav-left {
-  display: flex;
-  /* Makes items within each div align horizontally */
-  gap: 20px;
-  /* Adds space between links */
-  padding: 0;
-  margin: 0;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.navbar a .navbar span {
-
-  color: white;
-  text-decoration: none;
-  line-height: 1;
-}
-
-.navbar a:visited {
-  color: white;
-}
-
-.showElderlyName {
-  justify-content: right;
-  color: white;
-}
-
 /* ---------- BASE ---------- */
 
 html,
@@ -394,4 +351,49 @@ body {
   #headerText {
     font-size: 1.2rem;
   }
+}
+
+
+
+/* ---------- NAVBAR --------- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  /* Pushes content to the far left and right */
+  align-items: center;
+  /* Vertically centers the items */
+  background-color: #333;
+  padding: 10px 10px;
+  color: white;
+}
+
+.nav-left {
+  display: flex;
+  /* Makes items within each div align horizontally */
+  gap: 20px;
+  /* Adds space between links */
+  padding: 0;
+  margin: 0;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.navbar a .navbar span {
+
+  color: white;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.navbar a:visited {
+  color: white;
+}
+
+.showElderlyName {
+  justify-content: right;
+  color: white;
 }
