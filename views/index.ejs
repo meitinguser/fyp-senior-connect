@@ -26,6 +26,7 @@
       <span>       </span>
     </div>
     <div class="nav-right">
+      <span></span><span class="showElderlyName"><a href="/shop">Shop</a></span></span>
       <span></span><span id="showElderlyName">Log In</span></span>
       <a href="/profile"><img src="images/profile.png" style="width:25px;  height:25px;"></a>
     </div>
@@ -46,8 +47,11 @@
     <div id="2ndHeaderText"></div>
     <div id="sticksTray"></div>
     <button id="drawStickBtn"></button>
-  </div>
+    
   <div id="fortuneMessage" style="margin-top:10px;font-size:1.2em;"></div>
+  <div id="message" aria-live="polite"></div> <!-- message that appears after check-in completion -->
+
+  </div>
 
   <!-- PUZZLE GAME (HIDDEN UNTIL gameMode === 'puzzle') -->
   <div id="puzzleWrapper" style="display:none;">
@@ -58,6 +62,8 @@
       <div class="puzzle-piece"></div>
       <div class="puzzle-piece"></div>
     </div>
+      <div id="message" aria-live="polite"></div> <!-- message that appears after check-in completion -->
+
   </div>
 
 </body>
