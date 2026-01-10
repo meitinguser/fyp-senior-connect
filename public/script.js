@@ -481,9 +481,9 @@ function initDragAndDrop() {
                     body: JSON.stringify(payload)
                 })
                     .then(r => r.json())
-                    
+
                     .then(data => {
-                        console.log("ServiceNow response:", data);                            
+                        console.log("ServiceNow response:", data);
                         if (data.success) {
                             messageEl.textContent = `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
                         }
@@ -622,8 +622,8 @@ function initOmikuji() {
                     console.log("Omikuji check-in response:", data);
                     if (messageEl) messageEl.textContent = currentContent.text2;
                     if (data.success) {
-                            messageEl.textContent = `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
-                        }
+                        messageEl.textContent = `${currentContent.text2} + 🎉 You earned ${data.pointsEarned} points! Total: ${data.totalPoints}`;
+                    }
                 })
                 .catch(err => {
                     console.error("Omikuji check-in error:", err);
