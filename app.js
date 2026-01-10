@@ -161,6 +161,183 @@ function logAuth(stage, info = "") {
   console.log(`[AUTH] ${stage}`, info);
 }
 
+// ------------------ AUTOMATED ESCALATION SYSTEM ------------------
+
+const ESCALATION_INTERVAL = 15 * 60 * 1000 // 15 minutes in milliseconds (1 min)
+
+const SESSION_WINDOWS = {
+  morning: { start: "06:00", end: "12:00", name: "morning" },
+  night: { start: "16:00", end: "22:00", name: "night" }
+};
+
+// Helper: Get current Singapore time in HH:mm
+function getCurrentSingaporeTime() {
+  const now = new Date();
+  const singaporeOffset = 8 * 60; // UTC+8
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const singaporeTime = new Date(utc + singaporeOffset * 60000);
+  const hours = String(singaporeTime.getHours()).padStart(2, "0");
+  const minutes = String(singaporeTime.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+// Helper: Check if current time is strictly AFTER a session end time
+function isPastSessionEnd(sessionEndTime) {
+  const current = getCurrentSingaporeTime();
+  return current > sessionEndTime;
+}
+
+// ------------------ CORE LOGIC ------------------
+
+async function checkMissedCheckIns() {
+  console.log(`[ESCALATION Running check at ${getCurrentSingaporeTime()}]`);
+
+  // Check which session has ended
+  const morningEnded = isPastSessionEnd(SESSION_WINDOWS.morning.end);
+  const nightEnded = isPastSessionEnd(SESSION_WINDOWS.night.end);
+
+  if (!morningEnded && !nightEnded) {
+    console.log(`[ESCALATION] No session ended yet. Skipping.`);
+    return;
+  }
+
+  try {
+    // Get all data needed
+    const allElderly = await snGet("x_1855398_elderl_0_elderly_data");
+
+    // Fetch all logs for today (Check-ins and Missed logs)
+    const todayLogs = await snGet(
+      "x_1855398_elderl_0_elderly_check_in_log",
+      "sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()"
+    );
+
+    for (const elderly of allElderly) {
+      const name = elderly.name || elderly.u_name;
+      if (!name) continue;
+
+      // Check morning 
+      // Only check if the session has already ended
+      if (morningEnded) {
+        await processSessionForElderly(elderly, todayLogs, SESSION_WINDOWS.morning);
+      }
+
+      // Check night
+      // Only check night if the session has actually ended
+      if (nightEnded) {
+        await processSessionForElderly(elderly, todayLogs, SESSION_WINDOWS.night);
+      }
+    }
+    console.log("[ESCALATION] Check complete.")
+  } catch (err) {
+    console.error("[ESCALATION] System error:", err.message);
+  }
+}
+
+// Logic to check a specific elderly person for a specifc session
+async function processSessionForElderly(elderly, todayLogs, sessionConfig) {
+  const name = elderly.name || elderly.u_name;
+  const sessionLabel = sessionConfig.name // "morning" or "night"
+
+  // Filter logs for the specifc person
+  const personLogs = todayLogs.filter(log => {
+    const logName = (log.name || log.u_name || log.elderly_name || log.u_elderly_name || "").trim();
+    return logName === name;
+  });
+
+  // Check if escalation has already happened for this session
+  // Look for log entry that contains "missed" and session name
+  const alreadyEscalated = personLogs.some(log => {
+    const status = (log.status || log.u_status || "").toLowerCase();
+    // Check for "missed (morning)" or "missed (night)"
+    return status.includes("missed") && status.includes(sessionConfig.name.toLowerCase());
+  });
+
+  if (alreadyEscalated) {
+    console.log(`[ESCALATION] Already handled ${name} for ${sessionLabel}. Skipping.`);
+    return;
+  }
+
+  // Check if there is a valid Check-in
+  let hasCheckedIn = false;
+  let isPaused = false;
+
+  for (const log of personLogs) {
+    const status = (log.status || log.u_status || "").toLowerCase();
+
+    // Check Pause status
+    if (log.is_check_in_paused === true || log.is_check_in_paused === "true") {
+      isPaused = true;
+    }
+
+    // Check for "Checked in" status
+    if (status.includes("checked in")) {
+      // Validate Time (Strict Window Check)
+      // Extract HH:mm from timestamp or sys_created_on
+      let timeString = "";
+      if (log.timestamp && log.timestamp.length > 10) {
+        timeString = log.timestamp.slice(11, 16);
+      } else if (log.sys_created_on) {
+        timeString = log.sys_created_on.slice(11, 16);
+      }
+
+      // Compare "09:00" >= "06:00" && "09:00" <= "12:00"
+      if (timeString >= sessionConfig.start && timeString <= sessionConfig.end) {
+        hasCheckedIn = true;
+        break; // stop checking once a valid check in is found
+      }
+    }
+
+  }
+  // Decision
+  if (isPaused) {
+    console.log(`[ESCALATION] ${name} is PAUSED. Skipping.`);
+    return;
+  }
+
+  if (!hasCheckedIn) {
+    // No check-in found, and not paused, and not already escalated
+    console.log(`[ESCALATION] ${name} missed ${sessionLabel}. Creating Log...`);
+    await createMissedLog(elderly, sessionLabel);
+  } else {
+    console.log(`[ESCALATION] ${name} is Safe (${sessionLabel}).`)
+  }
+}
+
+// Creates "missed" record in the database
+async function createMissedLog(elderly, sessionName) {
+  try {
+    const payload = {
+      u_elderly: elderly.elderly_id,
+      name: elderly.name,
+      status: `missed (${sessionName})`,
+      timestamp: getSingaporeTimestamp()
+    };
+
+    const response = await axios.post(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      payload,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+    console.log(`[ESCALATION] Record created for ${elderly.name}: ${response.data.result.sys_id}`);
+
+  } catch (err) {
+    console.error(`[ESCALATION FAILED] ${elderly.name}:`, err.message);
+  }
+}
+
+function startEscalationScheduler() {
+  console.log(`[ESCALATION] Scheduler started. Morning ends: ${SESSION_WINDOWS.morning.end}, Night ends: ${SESSION_WINDOWS.night.end}`);
+
+  // Run once on startup (after 5 seconds to let connections settle)
+  setTimeout(checkMissedCheckIns, 5000);
+
+  // Run every 15 mins
+  setInterval(checkMissedCheckIns, ESCALATION_INTERVAL);
+}
+
 // ------------------ PASSPORT ------------------
 passport.use(
   new LocalStrategy(async (username, password, done) => {
@@ -819,7 +996,8 @@ app.post("/emergency", async (req, res) => {
       caregiver: caregiverName,
 
       // Emergency details
-      timestamp: getSingaporeTimestamp()
+      timestamp: getSingaporeTimestamp(),
+      status: "New"
     };
 
     // Creates a record in a customer emergency table that triggers workflow
@@ -963,6 +1141,9 @@ process.on('SIGTERM', () => {
 })
 
 // ------------------ START SERVER ------------------
-app.listen(PORT, () =>
+app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`)
-);
+
+  // Start the auto-escalation scheduler
+  startEscalationScheduler();
+});
