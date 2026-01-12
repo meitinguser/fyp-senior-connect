@@ -137,6 +137,36 @@ async function getElderlyBySysId(sys_id) {
   return res.data.result;
 }
 
+async function getCaregiverByUsername(username) {
+  const res = await axios.get(
+    `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person`,
+    {
+      params: {
+        sysparm_query: `c_username=${username}`,
+        sysparm_limit: 1
+      },
+      auth: { username: SN_USER, password: SN_PASS }
+    }
+  );
+  
+    // User NOT Found
+    if (!res.data?.result?.length) {
+      logAuth("Caregiver not found in ServiceNow", username);
+      return null;
+    }
+
+  return res.data.result[0] || null;
+}
+
+async function getCaregiverBySysId(sys_id) {
+  const res = await axios.get(
+    `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person/${sys_id}`,
+    { auth: { username: SN_USER, password: SN_PASS } }
+  );
+  return res.data.result;
+}
+
+
 
 // Helper: GET table from ServiceNow
 async function snGet(table, query = "") {
@@ -342,54 +372,83 @@ function startEscalationScheduler() {
 passport.use(
   new LocalStrategy(async (username, password, done) => {
     try {
-      logAuth("Login attempt for", username);
+      logAuth("Login attempt", username);
 
+      // ---- 1️⃣ Try Elderly ----
       const elderly = await getElderlyByUsername(username);
+      if (elderly) {
+        if (!elderly.u_password_hash) return done(null, false);
 
-      if (!elderly) {
-        logAuth("Login failed: user not found", username);
-        return done(null, false);
+        const match = await bcrypt.compare(password, elderly.u_password_hash);
+        if (!match) return done(null, false);
+
+        return done(null, {
+          id: elderly.sys_id,
+          role: "elderly"
+        });
       }
 
-      if (!elderly.u_password_hash) {
-        logAuth("Login failed: missing password hash for", elderly.sys_id);
-        return done(null, false);
-      }
+      // ---- 2️⃣ Try Caregiver ----
+      const caregiver = await getCaregiverByUsername(username);
+      if (!caregiver) return done(null, false);
 
-      const match = await bcrypt.compare(password, elderly.u_password_hash);
+      const match = await bcrypt.compare(password, caregiver.c_password_hash);
+      if (!match) return done(null, false);
 
-      if (!match) {
-        logAuth("Login failed: invalid password for", elderly.sys_id);
-        return done(null, false);
-      }
-
-      logAuth("Login success:", elderly.sys_id);
-      return done(null, elderly);
+      return done(null, {
+        id: caregiver.sys_id,
+        role: "caregiver"
+      });
 
     } catch (err) {
-      logAuth("Login exception", err.message);
-      return done(err);
+      console.error("[AUTH] Passport error:", err.message);
+      done(err);
     }
   })
 );
 
+
 passport.serializeUser((user, done) => {
-  done(null, user.sys_id);
+  done(null, { id: user.id, role: user.role });
 });
 
-passport.deserializeUser(async (id, done) => {
+passport.deserializeUser(async (obj, done) => {
   try {
-    const user = await getElderlyBySysId(id);
-    done(null, user);
+    if (obj.role === "elderly") {
+      const elderly = await getElderlyBySysId(obj.id);
+      elderly.role = "elderly";
+      return done(null, elderly);
+    }
+
+    if (obj.role === "caregiver") {
+      const caregiver = await getCaregiverBySysId(obj.id);
+      caregiver.role = "caregiver";
+      return done(null, caregiver);
+    }
+
+    done(null, false);
   } catch (err) {
     done(err);
   }
 });
 
+
 function requireLogin(req, res, next) {
   if (req.isAuthenticated()) return next();
   return res.redirect("/profile");
 }
+
+function requireCaregiver(req, res, next) {
+  if (!req.isAuthenticated() || req.user.role !== "caregiver") {
+    return res.redirect("/profile");
+  }
+  next();
+}
+
+app.get("/caregiver", requireCaregiver, (req, res) => {
+  res.render("caregiver", { user: req.user });
+});
+
 
 // ------------------ LANGUAGE CODE MAPPING -----------------
 // Maps ServiceNow language names to language codes for translation
@@ -673,7 +732,12 @@ app.post("/login", (req, res, next) => {
 
       logAuth("Login complete", user.sys_id);
 
-      res.json({ success: true });
+      res.json({
+      success: true,
+      role: user.role,
+      redirectTo: user.role === "caregiver" ? "/caregiver" : "/"
+    });
+
     });
   })(req, res, next);
 });

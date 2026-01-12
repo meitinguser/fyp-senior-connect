@@ -69,6 +69,8 @@ const puzzleWrapper = document.getElementById("puzzleWrapper");
 const omikujiWrapper = document.getElementById("omikujiWrapper");
 const showName = document.getElementById("showElderlyName");
 
+
+
 // ------------------ UTILS ------------------
 function shuffleArray(a) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -401,8 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
 
-                    messageEl.textContent = `${text2} ⭐ Total points: ${data.totalPoints}`;
-                })
+                    messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;                })
                 .catch(err => {
                     console.error("Check-in error:", err);
                     messageEl.textContent = currentContent.text3;
@@ -609,7 +610,8 @@ function initOmikuji() {
         fortuneMessage.textContent = f;
 
         if (elderlyInfo.elderlyId && elderlyInfo.elderlyName) {
-            const payload = {
+            setTimeout(() => {
+                const payload = {
                 elderlyId: elderlyInfo.elderlyId,
                 elderlyName: elderlyInfo.elderlyName,
                 status: "Checked In",
@@ -629,12 +631,13 @@ function initOmikuji() {
                         return;
                     }
 
-                    messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;
-                })
+                messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;               
+            })
                 .catch(err => {
                     console.error("Check-in error:", err);
                     messageEl.textContent = currentContent.text3;
                 });
+        }, 400);
         }
     };
 }

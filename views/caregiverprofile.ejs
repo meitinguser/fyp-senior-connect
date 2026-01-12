@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Caregiver Profile</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Caregiver Profile</h1>
+
+  <section>
+    <h2>My Info</h2>
+    <p><strong>Name:</strong> <%= caregiver.name %></p>
+    <p><strong>Username:</strong> <%= caregiver.username %></p>
+    <p><strong>Language Preference:</strong> <%= caregiver.language %></p>
+
+    <form id="update-language-form">
+      <label for="language">Change Language:</label>
+      <select id="language" name="language">
+        <option value="English">English</option>
+        <option value="Chinese">Chinese</option>
+        <option value="Malay">Malay</option>
+        <option value="Tamil">Tamil</option>
+      </select>
+      <button type="submit">Update</button>
+    </form>
+    <p id="update-message" style="color:green;"></p>
+  </section>
+
+  <section>
+    <h2>Linked Elderly</h2>
+    <% if (linkedElderly.length === 0) { %>
+      <p>No elderly linked to you.</p>
+    <% } else { %>
+      <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Language</th>
+            <th>Condition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% linkedElderly.forEach(e => { %>
+            <tr>
+              <td><%= e.name %></td>
+              <td><%= e.username %></td>
+              <td><%= e.condition %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
+
+  <script>
+    const form = document.getElementById('update-language-form');
+    const msg = document.getElementById('update-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const lang = document.getElementById('language').value;
+
+      try {
+        const res = await fetch(`/api/caregiver/language`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language_preference: lang })
+        });
+        const data = await res.json();
+        if (data.success) {
+          msg.textContent = "Language updated!";
+        } else {
+          msg.style.color = "red";
+          msg.textContent = "Update failed: " + data.error;
+        }
+      } catch (err) {
+        msg.style.color = "red";
+        msg.textContent = "Server error.";
+      }
+    });
+  </script>
+</body>
+</html>
