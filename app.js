@@ -167,8 +167,24 @@ const ESCALATION_INTERVAL = 15 * 60 * 1000 // 15 minutes in milliseconds (1 min)
 
 const SESSION_WINDOWS = {
   morning: { start: "06:00", end: "12:00", name: "morning" },
-  night: { start: "16:00", end: "22:00", name: "night" }
+  night: { start: "18:00", end: "22:00", name: "night" }
 };
+
+// Track which sessions have been processed today to prevent duplicates
+let processedSessions = {
+  date: null,
+  morning: new Set(),
+  night: new Set()
+};
+
+// Helper: Get current Singapore date (YYYY-MM-DD)
+function getCurrentSingaporeDate() {
+  const now = new Date();
+  const singaporeOffset = 8 * 60; // UTC+8
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const singaporeTime = new Date(utc + singaporeOffset * 60000);
+  return singaporeTime.toISOString().split('T')[0]; // "YYYY-MM-DD"
+}
 
 // Helper: Get current Singapore time in HH:mm
 function getCurrentSingaporeTime() {
@@ -181,10 +197,31 @@ function getCurrentSingaporeTime() {
   return `${hours}:${minutes}`;
 }
 
-// Helper: Check if current time is strictly AFTER a session end time
-function isPastSessionEnd(sessionEndTime) {
+// Helper: Check if we are in the grace period AFTER session end (e.g., 12:00-12:30 for morning)
+function isInGracePeriod(sessionEndTime, gracePeriodMinutes = 30) {
   const current = getCurrentSingaporeTime();
-  return current > sessionEndTime;
+  const [endHour, endMin] = sessionEndTime.split(':').map(Number);
+
+  // Calculate grace period end time 
+  const endDate = new Date();
+  endDate.setHours(endHour, endMin + gracePeriodMinutes, 0, 0);
+  const graceEndTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+
+  // Inside of grace period if current > sessionEnd and current <= graceEnd
+  return current > sessionEndTime && current <= graceEndTime;
+}
+
+// Reset processed session tracker at midnight 
+function resetProcessedSessions() {
+  const today = getCurrentSingaporeDate();
+  if (processedSessions.date !== today) {
+    console.log(`[ESCALATION] New day detected. Resetting processed sessions tracker.`);
+    processedSessions = {
+      date: today,
+      morning: new Set(),
+      night: new Set()
+    };
+  }
 }
 
 // ------------------ CORE LOGIC ------------------
@@ -192,42 +229,52 @@ function isPastSessionEnd(sessionEndTime) {
 async function checkMissedCheckIns() {
   console.log(`[ESCALATION Running check at ${getCurrentSingaporeTime()}]`);
 
-  // Check which session has ended
-  const morningEnded = isPastSessionEnd(SESSION_WINDOWS.morning.end);
-  const nightEnded = isPastSessionEnd(SESSION_WINDOWS.night.end);
+  // Reset tracker if new day
+  resetProcessedSessions();
 
-  if (!morningEnded && !nightEnded) {
-    console.log(`[ESCALATION] No session ended yet. Skipping.`);
+  // Check if in grace period after a session has ended
+  const inMorningGracePeriod = isInGracePeriod(SESSION_WINDOWS.morning.end);
+  const inNightGracePeriod = isInGracePeriod(SESSION_WINDOWS.night.end);
+
+  if (!inMorningGracePeriod && !inNightGracePeriod) {
+    console.log(`[ESCALATION] Not in any grace period. Skipping. (Current: ${getCurrentSingaporeTime()})`);
     return;
   }
 
   try {
-    // Get all data needed
+    // Get all elderly data 
     const allElderly = await snGet("x_1855398_elderl_0_elderly_data");
+    console.log(`[ESCALATION] Found ${allElderly.length} elderly records`);
 
     // Fetch all logs for today (Check-ins and Missed logs)
     const todayLogs = await snGet(
       "x_1855398_elderl_0_elderly_check_in_log",
       "sys_created_onONToday@javascript:gs.beginningOfToday()@javascript:gs.endOfToday()"
     );
+    console.log(`[ESCALATION] Found ${todayLogs.length} logs for today`);
 
     for (const elderly of allElderly) {
       const name = elderly.name || elderly.u_name;
-      if (!name) continue;
-
-      // Check morning 
-      // Only check if the session has already ended
-      if (morningEnded) {
-        await processSessionForElderly(elderly, todayLogs, SESSION_WINDOWS.morning);
+      if (!name) {
+        console.log(`[ESCALATION] Skipping elderly with no name`);
+        continue;
       }
 
-      // Check night
-      // Only check night if the session has actually ended
-      if (nightEnded) {
+      // Check morning session if in morning grace period
+      if (inMorningGracePeriod && !processedSessions.morning.has(name)) {
+        await processSessionForElderly(elderly, todayLogs, SESSION_WINDOWS.morning);
+        // Mark as processed regardless of outcome ot prevent re-processing
+        processedSessions.morning.add(name);
+      }
+
+      // Check night session if in night grace period
+      if (inNightGracePeriod && !processedSessions.night.has(name)) {
         await processSessionForElderly(elderly, todayLogs, SESSION_WINDOWS.night);
+        // Mark as processed regardless of outcome to prevent re-processing
+        processedSessions.night.add(name);
       }
     }
-    console.log("[ESCALATION] Check complete.")
+    console.log(`[ESCALATION] Check complete. Processed - Morning: ${processedSessions.morning.size}, Night: ${processedSessions.night.size}`)
   } catch (err) {
     console.error("[ESCALATION] System error:", err.message);
   }
@@ -238,18 +285,35 @@ async function processSessionForElderly(elderly, todayLogs, sessionConfig) {
   const name = elderly.name || elderly.u_name;
   const sessionLabel = sessionConfig.name // "morning" or "night"
 
-  // Filter logs for the specifc person
+  console.log(`[ESCALATION] Checking ${name} for ${sessionLabel} session...`);
+
+  // CHECK PAUSE STATUS FROM ELDERLY DATA TABLE
+  const isPaused = elderly.is_check_in_paused === true ||
+    elderly.is_check_in_paused === "true";
+
+  if (isPaused) {
+    console.log(`[ESCALATION] || ${name} is PAUSED in elderly data table. Skipping escalation for ${sessionLabel}.`);
+    return;
+  }
+
+  // Filter logs for the specifc person from today's logs
   const personLogs = todayLogs.filter(log => {
     const logName = (log.name || log.u_name || log.elderly_name || log.u_elderly_name || "").trim();
     return logName === name;
   });
+
+  console.log(`[ESCALATION] Found ${personLogs.length} logs for ${name} today`);
 
   // Check if escalation has already happened for this session
   // Look for log entry that contains "missed" and session name
   const alreadyEscalated = personLogs.some(log => {
     const status = (log.status || log.u_status || "").toLowerCase();
     // Check for "missed (morning)" or "missed (night)"
-    return status.includes("missed") && status.includes(sessionConfig.name.toLowerCase());
+    const isMissedStatus = status.includes("missed") && status.includes(sessionConfig.name.toLowerCase());
+    if (isMissedStatus) {
+      console.log(`[ESCALATION] Found existing missed record for ${name} (${sessionLabel}): ${status}`);
+    }
+    return isMissedStatus;
   });
 
   if (alreadyEscalated) {
@@ -259,15 +323,9 @@ async function processSessionForElderly(elderly, todayLogs, sessionConfig) {
 
   // Check if there is a valid Check-in
   let hasCheckedIn = false;
-  let isPaused = false;
 
   for (const log of personLogs) {
     const status = (log.status || log.u_status || "").toLowerCase();
-
-    // Check Pause status
-    if (log.is_check_in_paused === true || log.is_check_in_paused === "true") {
-      isPaused = true;
-    }
 
     // Check for "Checked in" status
     if (status.includes("checked in")) {
@@ -280,26 +338,27 @@ async function processSessionForElderly(elderly, todayLogs, sessionConfig) {
         timeString = log.sys_created_on.slice(11, 16);
       }
 
+      console.log(`[ESCALATION] Found check-in for ${name} at ${timeString}`);
+
       // Compare "09:00" >= "06:00" && "09:00" <= "12:00"
       if (timeString >= sessionConfig.start && timeString <= sessionConfig.end) {
         hasCheckedIn = true;
+        console.log(`[ESCALATION] Valid check-in within ${sessionLabel} window (${sessionConfig.start}-${sessionConfig.end})`);
         break; // stop checking once a valid check in is found
+      } else {
+        console.log(`[ESCALATION] Check-in at ${timeString} is OUTSIDE ${sessionLabel} window (${sessionConfig.start}-${sessionConfig.end})`);
       }
     }
 
   }
-  // Decision
-  if (isPaused) {
-    console.log(`[ESCALATION] ${name} is PAUSED. Skipping.`);
-    return;
-  }
 
+  // Decision logic
   if (!hasCheckedIn) {
     // No check-in found, and not paused, and not already escalated
-    console.log(`[ESCALATION] ${name} missed ${sessionLabel}. Creating Log...`);
+    console.log(`[ESCALATION] ${name} MISSED ${sessionLabel}. Creating missed log...`);
     await createMissedLog(elderly, sessionLabel);
   } else {
-    console.log(`[ESCALATION] ${name} is Safe (${sessionLabel}).`)
+    console.log(`[ESCALATION] ${name} is SAFE (${sessionLabel}).`)
   }
 }
 
@@ -313,6 +372,8 @@ async function createMissedLog(elderly, sessionName) {
       timestamp: getSingaporeTimestamp()
     };
 
+    console.log(`[ESCALATION] Creating missed log:`, payload);
+
     const response = await axios.post(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
       payload,
@@ -321,21 +382,39 @@ async function createMissedLog(elderly, sessionName) {
         headers: { "Content-Type": "application/json" }
       }
     );
-    console.log(`[ESCALATION] Record created for ${elderly.name}: ${response.data.result.sys_id}`);
+    console.log(`[ESCALATION] Missed record created for ${elderly.name}: ${response.data.result.sys_id}`);
 
   } catch (err) {
     console.error(`[ESCALATION FAILED] ${elderly.name}:`, err.message);
+    if (err.response) {
+      console.error(`[ESCALATION] Response:`, err.response.data);
+    }
   }
 }
 
 function startEscalationScheduler() {
-  console.log(`[ESCALATION] Scheduler started. Morning ends: ${SESSION_WINDOWS.morning.end}, Night ends: ${SESSION_WINDOWS.night.end}`);
+  console.log(`[ESCALATION] ═══════════════════════════════════════════`);
+  console.log(`[ESCALATION] Scheduler started`);
+  console.log(`[ESCALATION] Morning session: ${SESSION_WINDOWS.morning.start} - ${SESSION_WINDOWS.morning.end}`);
+  console.log(`[ESCALATION] Night session: ${SESSION_WINDOWS.night.start} - ${SESSION_WINDOWS.night.end}`);
+  console.log(`[ESCALATION] Check interval: ${ESCALATION_INTERVAL / 60000} minutes`);
+  console.log(`[ESCALATION] Grace period: 30 minutes after session end`);
+  console.log(`[ESCALATION] First check will run after initial delay, then every 15 minutes`);
+  console.log(`[ESCALATION] ═══════════════════════════════════════════`);
 
-  // Run once on startup (after 5 seconds to let connections settle)
-  setTimeout(checkMissedCheckIns, 5000);
+  // Initialize processed sessions for today
+  processedSessions.date = getCurrentSingaporeDate();
 
-  // Run every 15 mins
+  // DON'T run on startup - wait for first scheduled interval
+  // This prevents running checks during sessions or at inappropriate times
+
+  // Run every 15 minutes
   setInterval(checkMissedCheckIns, ESCALATION_INTERVAL);
+
+  // Log next check time
+  const nextCheck = new Date(Date.now() + ESCALATION_INTERVAL);
+  console.log(`[ESCALATION] Next check scheduled for: ${nextCheck.toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })}`);
+
 }
 
 // ------------------ PASSPORT ------------------
@@ -587,7 +666,7 @@ app.delete('/api/translations/:langCode', (req, res) => {
 });
 
 // Clear all cache (admin endpoint)
-app.delete('api/translations', (req, res) => {
+app.delete('/api/translations', (req, res) => {
   translationCache = {};
   saveCacheToFile();
   res.json({
