@@ -1,52 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <title>Caregiver Profile</title>
   <style>
-    .button {
-      display: inline-block;
-      padding: 0.5em 1em;
-      background-color: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-    }
+   
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 30px;
+  }
 
-    .button:hover {
-      background-color: #0056b3;
-    }
-    
-  </style>
-    <link rel="stylesheet" href="/styles.css">
+  h1 {
+    margin-bottom: 20px;
+    color: #002d62;
+  }
+
+  section {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  section h2 {
+    margin-top: 0;
+    color: #002d62;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .info-item {
+    background: #f9fafc;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+
+  .info-item strong {
+    display: block;
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  th, td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+
+  th {
+    background: #002d62;
+    color: white;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .empty {
+    padding: 15px;
+    color: #666;
+    font-style: italic;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .badge.active {
+    background: #e6f0ff;
+    color: #0055cc;
+  }
+
+  .badge.paused {
+    background: #ffe6e6;
+    color: #cc0000;
+  }
+</style>
 
 </head>
-
 <body>
   <h1>Caregiver Profile</h1>
+  <button><a href="/caregiver">Edit Language</a></button>
+  <button><a href="/caregiver">Pause</a></button>
+
 
   <section>
     <h2>My Info</h2>
-    <p><strong>Name:</strong>
-      <%= caregiver.contact_name || 'N/A' %>
-    </p>
-    <p><strong>Username:</strong>
-      <%= caregiver.c_username || 'N/A' %>
-    </p>
-    <p><strong>Phone:</strong>
-      <%= caregiver.contact_phone || 'N/A' %>
-    </p>
-    <p><strong>Email:</strong>
-      <%= caregiver.contact_email || 'N/A' %>
-    </p>
-    <p><strong>Address:</strong>
-      <%= caregiver.address || 'N/A' %>
-    </p>
+    <p><strong>Name:</strong> <%= caregiver.contact_name || 'N/A' %></p>
+    <p><strong>Username:</strong> <%= caregiver.c_username || 'N/A' %></p>
+    <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
+    <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
+    <p><strong>Address:</strong> <%= caregiver.address || 'N/A' %></p>
   </section>
 
-  <!-- <section>
-    <h2>Linked Elderly</h2>
+  <section>
+    <h2>Elderly Under My Care</h2>
     <% if (!elderlies || elderlies.length === 0) { %>
       <p>No elderly linked to you.</p>
     <% } else { %>
@@ -55,7 +123,6 @@
           <tr>
             <th>Name</th>
             <th>Username</th>
-            <th>Contact</th>
             <th>Address</th>
             <th>Preferred Language</th>
             <th>Condition</th>
@@ -66,7 +133,6 @@
             <tr>
               <td><%= e.name || 'N/A' %></td>
               <td><%= e.u_elderly_username || 'N/A' %></td>
-              <td><%= e.contact || 'N/A' %></td>
               <td><%= e.address || 'N/A' %></td>
               <td><%= e.language_preference || 'N/A' %></td>
               <td><%= e.condition_special_consideration || 'N/A' %></td>
@@ -75,16 +141,6 @@
         </tbody>
       </table>
     <% } %>
-  </section> */
--->
-
-  <section>
-    <h2>Linked Elderly</h2>
-    <p>
-      Linking is not working due to reference fields, so you can see all elderlies here
-    </p>
-    <a href="/caregiver" class="button">View All Elderly</a>
   </section>
 </body>
-
 </html>

@@ -630,13 +630,31 @@ app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
       })
     );
 
+    // fetch check-in logs (latest first)
+const logsRes = await axios.get(
+  `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+  {
+    auth: { username: SN_USER, password: SN_PASS },
+    params: { sysparm_query: "ORDERBYDESCsys_created_on" }
+  }
+);
+
+const checkinLogs = logsRes.data.result || [];
+
+
     // Filter out nulls
     const linkedElderlies = elderlyList.filter(e => e !== null);
+    
 
     console.log("[CARE PROFILE] Final linked elderlies:", linkedElderlies.map(e => e.name));
 
     // Render page
-    res.render("caregiverprofile", { caregiver, elderlies: linkedElderlies });
+   res.render("caregiverprofile", {
+  caregiver,
+  elderlies: linkedElderlies,
+  checkinLogs
+});
+
   } catch (err) {
     console.error("[CARE PROFILE] Fatal error:", err);
     res.status(500).send("Error loading caregiver profile");

@@ -67,7 +67,6 @@ const messageEl = document.getElementById('message');
 const gameArea = document.getElementById("gameArea");
 const puzzleWrapper = document.getElementById("puzzleWrapper");
 const omikujiWrapper = document.getElementById("omikujiWrapper");
-const showName = document.getElementById("showElderlyName");
 
 
 
@@ -84,7 +83,6 @@ function imagePath(name) {
     return `/images/${name}.png`;
 }
 const basketImagePath = "/images/basket-top-view.png";
-showName.innerHTML = elderlyInfo.elderlyName;
 
 
 function getSingaporeTimestamp() {
