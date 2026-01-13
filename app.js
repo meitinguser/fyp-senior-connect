@@ -137,6 +137,23 @@ async function getElderlyBySysId(sys_id) {
   return res.data.result;
 }
 
+async function getElderlyByElderlyId(elderly_id) {
+  const res = await axios.get(
+    `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+    {
+      params: {
+        sysparm_query: `elderly_id=${elderly_id}`,
+        sysparm_limit: 1
+      },
+      auth: { username: SN_USER, password: SN_PASS }
+    }
+  );
+
+  return res.data.result?.[0] || null;
+}
+
+
+
 async function getCaregiverByUsername(username) {
   const res = await axios.get(
     `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person`,
@@ -165,6 +182,23 @@ async function getCaregiverBySysId(sys_id) {
   );
   return res.data.result;
 }
+
+async function getSupportRolesForCaregiver(caregiver) {
+  const caregiverId = caregiver.sys_id; // <-- use sys_id, not person_id
+  console.log("[CARE PROFILE] Fetching support roles for caregiver:", caregiverId);
+
+  const res = await axios.get(
+    `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+    {
+      auth: { username: SN_USER, password: SN_PASS },
+      params: { sysparm_query: `person_id=${caregiverId}` }
+    }
+  );
+
+  console.log("[CARE PROFILE LINKS]", res.data.result);
+  return res.data.result || [];
+}
+
 
 
 
@@ -409,21 +443,23 @@ passport.use(
 
 
 passport.serializeUser((user, done) => {
-  done(null, { id: user.id, role: user.role });
+  done(null, {
+    id: user.id,
+    role: user.role
+  });
 });
 
-passport.deserializeUser(async (obj, done) => {
+
+passport.deserializeUser(async (sessionUser, done) => {
   try {
-    if (obj.role === "elderly") {
-      const elderly = await getElderlyBySysId(obj.id);
-      elderly.role = "elderly";
-      return done(null, elderly);
+    if (sessionUser.role === "elderly") {
+      const elderly = await getElderlyBySysId(sessionUser.id);
+      return done(null, { ...elderly, role: "elderly" });
     }
 
-    if (obj.role === "caregiver") {
-      const caregiver = await getCaregiverBySysId(obj.id);
-      caregiver.role = "caregiver";
-      return done(null, caregiver);
+    if (sessionUser.role === "caregiver") {
+      const caregiver = await getCaregiverBySysId(sessionUser.id);
+      return done(null, { ...caregiver, role: "caregiver" });
     }
 
     done(null, false);
@@ -433,21 +469,104 @@ passport.deserializeUser(async (obj, done) => {
 });
 
 
+
 function requireLogin(req, res, next) {
   if (req.isAuthenticated()) return next();
   return res.redirect("/profile");
 }
 
 function requireCaregiver(req, res, next) {
-  if (!req.isAuthenticated() || req.user.role !== "caregiver") {
-    return res.redirect("/profile");
+  if (req.isAuthenticated() && req.user?.role === "caregiver") {
+    return next();
   }
-  next();
+  return res.redirect("/profile");
 }
+
 
 app.get("/caregiver", requireCaregiver, (req, res) => {
   res.render("caregiver", { user: req.user });
 });
+
+app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
+  try {
+    const caregiver = req.user;
+    console.log("[CARE PROFILE] Caregiver object:", caregiver);
+
+    const caregiverId = caregiver.person_id; // Use the person_id string
+    console.log(`[CARE PROFILE] Caregiver ID: ${caregiverId}`);
+
+    // Fetch all support roles
+    const supportRolesRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_limit: 100 } // fetch all for now
+      }
+    );
+
+    const allRoles = supportRolesRes.data.result || [];
+    console.log("[CARE PROFILE] Total support roles fetched:", allRoles.length);
+
+    // Filter only the roles for this caregiver
+    const caregiverRoles = allRoles.filter(r => {
+      // Extract the actual ID from the reference object
+      const pid = r.person_id?.value || r.person_id; // fallback in case it's not an object
+      return String(pid) === String(caregiverId) && (r.is_caregiver === true || r.is_caregiver === "true");
+    });
+
+
+
+    console.log("[CARE PROFILE] Support roles for this caregiver:", caregiverRoles.length);
+
+    // Fetch linked elderlies
+    const elderlyList = await Promise.all(
+      caregiverRoles.map(async r => {
+        try {
+          const elderlyId = r.elderly_id?.value || r.elderly_id;
+          if (!elderlyId) {
+            console.warn("[CARE PROFILE] Link has no elderly_id:", r);
+            return null;
+          }
+
+          // Fetch elderly data by elderly_id string
+          const resElderly = await axios.get(
+            `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+            {
+              auth: { username: SN_USER, password: SN_PASS },
+              params: { sysparm_query: `elderly_id=${elderlyId}`, sysparm_limit: 1 }
+            }
+          );
+
+          const elderly = resElderly.data.result?.[0] || null;
+          if (!elderly) {
+            console.warn("[CARE PROFILE] No elderly found with elderly_id:", elderlyId);
+            return null;
+          }
+
+          return elderly;
+        } catch (err) {
+          console.error("[CARE PROFILE] Error fetching elderly:", err.message, r);
+          return null;
+        }
+      })
+    );
+
+    // Filter out nulls
+    const linkedElderlies = elderlyList.filter(e => e !== null);
+
+    console.log("[CARE PROFILE] Final linked elderlies:", linkedElderlies.map(e => e.name));
+
+    // Render page
+    res.render("caregiverprofile", { caregiver, elderlies: linkedElderlies });
+  } catch (err) {
+    console.error("[CARE PROFILE] Fatal error:", err);
+    res.status(500).send("Error loading caregiver profile");
+  }
+});
+
+
+
+
 
 
 // ------------------ LANGUAGE CODE MAPPING -----------------
@@ -658,31 +777,40 @@ app.delete('api/translations', (req, res) => {
 // ------------------ ROUTES ------------------
 
 // Main game page (Fetches language from authenticated user)
-app.get("/", requireLogin, async (req, res) => { // async with await
-  let preferredLang = 'en'; // Default to English
+app.get("/", requireLogin, async (req, res) => {
+  let preferredLang = "en"; // default
+  let elderly = null;
 
-  // User is authenticated, req.user contains the elderly person's data
-  if (req.user) {
-    try {
-      // Get language preference directly from authenticated user object
-      const langPreference = req.user.language_preference || req.user.u_language_preference;
+  try {
+    // Only elderly should load game data
+    if (req.user?.role === "elderly") {
+      // Fetch full elderly record from ServiceNow
+      elderly = await getElderlyBySysId(req.user.sys_id);
 
-      // Convert language name to code (e.g. "Chinese" -> "zh")
+      const langPreference =
+        elderly.language_preference || elderly.u_language_preference;
+
       preferredLang = getLanguageCode(langPreference);
 
-      console.log(`Loading page for ${req.user.name} (${req.user.u_elderly_username}) with language: ${langPreference} (${preferredLang})`);
-    } catch (err) {
-      console.error("Error fetching language preference on page load:", err.message);
+      console.log(
+        `Loading page for ${elderly.name} (${elderly.u_elderly_username}) with language: ${langPreference} (${preferredLang})`
+      );
     }
+  } catch (err) {
+    console.error(
+      "Error fetching language preference on page load:",
+      err.message
+    );
   }
 
-  // Pass the preferred language code to the EJS template
   res.render("index", {
     title: "Senior Support - Home",
-    preferredLang: preferredLang,
-    user: req.user
+    preferredLang,
+    user: req.user,   // keep for auth checks
+    elderly           // full elderly data for name, points, etc
   });
 });
+
 
 // Profile / Login
 app.get("/profile", (req, res) => {
@@ -725,22 +853,65 @@ app.post("/login", (req, res, next) => {
         return res.status(500).json({ success: false });
       }
 
+      console.log("[LOGIN] Authenticated user:", user);
+
       const oneYear = 365 * 24 * 60 * 60 * 1000;
 
-      res.cookie("elderlyId", user.sys_id, { maxAge: oneYear, path: "/" });
-      res.cookie("elderlyName", user.name, { maxAge: oneYear, path: "/" });
+      // ================= CAREGIVER =================
+      if (user.role === "caregiver") {
+        res.cookie("caregiverId", user.sys_id, {
+          maxAge: oneYear,
+          path: "/"
+        });
 
-      logAuth("Login complete", user.sys_id);
+        return res.json({
+          success: true,
+          redirect: "/caregiver/profile"
+        });
+      }
 
-      res.json({
-      success: true,
-      role: user.role,
-      redirectTo: user.role === "caregiver" ? "/caregiver" : "/"
-    });
+      // ================= ELDERLY =================
+      if (user.role === "elderly") {
+        const elderlyId =
+          user.elderly_id ||
+          user.u_elderly_id ||
+          user.person_id; // last-resort fallback
 
+        const elderlyName =
+          user.name ||
+          user.u_name ||
+          user.contact_name ||
+          "User";
+
+        console.log("[LOGIN] Setting elderly cookies:", {
+          elderlyId,
+          elderlyName
+        });
+
+        res.cookie("elderlyId", elderlyId, {
+          maxAge: oneYear,
+          path: "/"
+        });
+
+        res.cookie("elderlyName", elderlyName, {
+          maxAge: oneYear,
+          path: "/"
+        });
+
+        return res.json({
+          success: true,
+          redirect: "/"
+        });
+      }
+
+      // ================= UNKNOWN ROLE =================
+      return res.status(400).json({ success: false });
+      
     });
   })(req, res, next);
 });
+
+
 
 // ----------------------------------------
 // SHOP
@@ -1203,6 +1374,29 @@ process.on('SIGTERM', () => {
   }
   process.exit(0);
 })
+
+
+
+async function dumpSupportRoles() {
+  try {
+    const res = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_limit: 100 } // adjust limit if needed
+      }
+    );
+
+    console.log("Rows fetched:", res.data.result.length);
+    res.data.result.forEach((row, i) => {
+      console.log(`${i + 1}. elderly_id=${row.elderly_id}, person_id=${row.person_id}, is_caregiver=${row.is_caregiver}, is_next_of_kin=${row.is_next_of_kin}`);
+    });
+  } catch (err) {
+    console.error("Error fetching support roles:", err.message);
+  }
+}
+
+dumpSupportRoles();
 
 // ------------------ START SERVER ------------------
 app.listen(PORT, () => {

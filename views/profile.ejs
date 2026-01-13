@@ -25,28 +25,35 @@
 
     <script>
         document.getElementById("loginSubmit").onclick = async () => {
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value;
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
 
-            if (!username || !password) {
-                alert("Please enter username and password");
-                return;
-            }
+    if (!username || !password) {
+        alert("Please enter username and password");
+        return;
+    }
 
-            const res = await fetch("/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
-            });
+    try {
+        const res = await fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
 
-            const data = await res.json();
+        const data = await res.json();
 
-            if (data.success) {
-                window.location.href = "/";
-            } else {
-                alert("Login failed");
-            }
-        };
+        if (data.success && data.redirect) {
+            // Use the redirect sent by the backend
+            window.location.href = data.redirect;
+        } else {
+            alert("Login failed");
+        }
+    } catch (err) {
+        console.error("Login error:", err);
+        alert("Server error during login");
+    }
+};
+
 
         function setTimeBasedBackground(content) {
             const hour = new Date().getHours();
