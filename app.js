@@ -1103,6 +1103,7 @@ app.get('/api/caregiver/elderly', async (req, res) => {
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
+      method: row.method || row.u_method || "NA"
     }));
 
     res.json({ success: true, elderly: cleaned });

@@ -384,7 +384,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const payload = {
             elderlyId,
             elderlyName,
-            status: "Checked In"
+            status: "Checked In",
+            method: "puzzle"
         };
 
         setTimeout(() => {
@@ -394,14 +395,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify(payload)
             })
                 .then(r => r.json())
-
+                
                 .then(data => {
-                    if (!data.success) {
-                        messageEl.textContent = "Couldn't connect. Try again 🙏";
-                        return;
-                    }
-
-                    messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;                })
+                        if (!data.success) {
+                            messageEl.textContent = "Couldn't connect. Try again 🙏";
+                            return;
+                        }
+                        messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;
+                    })
                 .catch(err => {
                     console.error("Check-in error:", err);
                     messageEl.textContent = currentContent.text3;
@@ -472,6 +473,8 @@ function initDragAndDrop() {
                     elderlyId: elderlyInfo.elderlyId,
                     elderlyName: elderlyInfo.elderlyName,
                     status: "Checked In",
+                    method: "basket"
+
                 };
                 console.log("Check-in payload:", payload);
 
@@ -613,7 +616,9 @@ function initOmikuji() {
                 elderlyId: elderlyInfo.elderlyId,
                 elderlyName: elderlyInfo.elderlyName,
                 status: "Checked In",
-                timestamp: getSingaporeTimestamp()
+                timestamp: getSingaporeTimestamp(),
+                method: "fortune"
+
             };
 
             fetch("/checkin", {
@@ -624,13 +629,12 @@ function initOmikuji() {
                 .then(r => r.json())
 
                 .then(data => {
-                    if (!data.success) {
-                        messageEl.textContent = "Couldn't connect. Try again 🙏";
-                        return;
-                    }
-
-                messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;               
-            })
+                        if (!data.success) {
+                            messageEl.textContent = "Couldn't connect. Try again 🙏";
+                            return;
+                        }
+                        messageEl.textContent = `${currentContent.text2} ⭐ Total points: ${data.totalPoints}`;
+                    })
                 .catch(err => {
                     console.error("Check-in error:", err);
                     messageEl.textContent = currentContent.text3;

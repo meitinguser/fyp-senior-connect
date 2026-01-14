@@ -189,12 +189,6 @@
   <!-- Filters -->
   <div id="filterRow">
     
-    <!-- // DO NOT REMOVE THIS IF YOU REMOVE IT THE ELDERS DONT LOAD --> 
-    <span style="visibility: hidden;">Caregiver:
-      <select id="caregiverSelect">
-        <option value="all">All Caregivers</option>
-      </select>
-    </span>
 
     <span>Senior:
       <select id="filterSelect">
@@ -246,7 +240,6 @@
       elderlyData = eData.elderly || [];
       checkinLogs = cData.checkins || [];
 
-      populateCaregiverFilter();
       const statusFilter = document.getElementById("filterSelect").value;
       renderDashboard(statusFilter);
     }
@@ -385,7 +378,6 @@
       const body = document.getElementById("elderlyBody");
       body.innerHTML = "";
 
-      const selectedCaregiver = document.getElementById("caregiverSelect").value;
 
       let totalCount = 0;
       let checkedCount = 0;
@@ -393,7 +385,6 @@
       let missedNightCount = 0;
 
       elderlyData.forEach(person => {
-        if (selectedCaregiver !== "all" && person.caregiver !== selectedCaregiver) return;
 
         const logs = checkinLogs.filter(l => l.elderly_name === person.name);
         const status = getTodayStatus(logs);
@@ -484,27 +475,9 @@
       document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
     }
 
-    // --- Populate caregiver filter ---
-    function populateCaregiverFilter() {
-      const select = document.getElementById("caregiverSelect");
-      select.innerHTML = '<option value="all">All Caregivers</option>';
-      const caregivers = [...new Set(elderlyData.map(e => e.caregiver).filter(Boolean))];
-      caregivers.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        select.appendChild(opt);
-      });
-    }
-
     // --- Event listeners for filters ---
     document.getElementById("filterSelect").addEventListener("change", e => {
       const status = e.target.value;
-      renderDashboard(status);
-    });
-
-    document.getElementById("caregiverSelect").addEventListener("change", () => {
-      const status = document.getElementById("filterSelect").value;
       renderDashboard(status);
     });
 
