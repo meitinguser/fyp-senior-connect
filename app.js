@@ -562,9 +562,76 @@ function requireCaregiver(req, res, next) {
 }
 
 
-app.get("/caregiver", requireCaregiver, (req, res) => {
-  res.render("caregiver", { user: req.user });
+app.get("/caregiver", requireCaregiver, async (req, res) => {
+  try {
+    const caregiver = req.user; // logged-in caregiver
+    const caregiverId = caregiver.person_id; // string
+
+    // Fetch all support roles
+    const supportRolesRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_limit: 100 }
+      }
+    );
+
+    const allRoles = supportRolesRes.data.result || [];
+
+    // Filter only roles linked to this caregiver
+    const caregiverRoles = allRoles.filter(r => {
+      // Extract the actual ID from the reference object
+      const pid = r.person_id?.value || r.person_id; // fallback in case it's not an object
+      return String(pid) === String(caregiverId) && (r.is_caregiver === true || r.is_caregiver === "true");
+    });
+
+    // Fetch linked elderlies by elderly_id
+    const elderlyList = await Promise.all(
+      caregiverRoles.map(async r => {
+        const elderlyId = r.elderly_id?.value || r.elderly_id;
+        if (!elderlyId) return null;
+
+        const resElderly = await axios.get(
+          `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+          {
+            auth: { username: SN_USER, password: SN_PASS },
+            params: { sysparm_query: `elderly_id=${elderlyId}`, sysparm_limit: 1 }
+          }
+        );
+
+        return resElderly.data.result?.[0] || null;
+      })
+    );
+
+    const linkedElderlies = elderlyList.filter(e => e !== null);
+
+    // Fetch check-in logs
+    const logsRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_query: "ORDERBYDESCsys_created_on" }
+      }
+    );
+
+    const checkinLogs = logsRes.data.result || [];
+
+    // Render caregiver page with linked elderlies
+    res.render("caregiver", {
+      caregiver,                // pass as 'caregiver' so template finds it
+      elderlies: linkedElderlies,
+      checkinLogs
+    });
+
+  } catch (err) {
+    console.error("[CAREGIVER] Fatal error:", err.message);
+    res.status(500).send("Error loading caregiver page");
+  }
 });
+
+
+
+
 
 app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
   try {
@@ -963,9 +1030,12 @@ app.post("/login", (req, res, next) => {
 
         return res.json({
           success: true,
-          redirect: "/caregiver/profile"
+          redirect: "/caregiver"
         });
       }
+
+      // ================= AIC =================
+      // Add code here
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
