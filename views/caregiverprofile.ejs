@@ -1,146 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Caregiver Profile</title>
+  <title>My Profile</title>
   <style>
-   
-  body {
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #f4f6f9;
-    margin: 0;
-    padding: 30px;
-  }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      padding: 30px;
+    }
 
-  h1 {
-    margin-bottom: 20px;
-    color: #002d62;
-  }
+    .card {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 
-  section {
-    background: #fff;
-    padding: 20px;
-    margin-bottom: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-  section h2 {
-    margin-top: 0;
-    color: #002d62;
-  }
+    label {
+      font-weight: bold;
+    }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-  }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 8px 8px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
 
-  .info-item {
-    background: #f9fafc;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 0.95rem;
-  }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #002d62;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
 
-  .info-item strong {
-    display: block;
-    font-size: 0.75rem;
-    color: #666;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-  }
+    button:hover {
+      background: #00408f;
+    }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
+    #status {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+    }
 
-  th, td {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-  }
-
-  th {
-    background: #002d62;
-    color: white;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  .empty {
-    padding: 15px;
-    color: #666;
-    font-style: italic;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: bold;
-  }
-
-  .badge.active {
-    background: #e6f0ff;
-    color: #0055cc;
-  }
-
-  .badge.paused {
-    background: #ffe6e6;
-    color: #cc0000;
-  }
-</style>
-
+    .success { color: green; }
+    .error { color: red; }
+  </style>
 </head>
 <body>
-  <h1>Caregiver Profile</h1>
-  <button><a href="/caregiver">Edit Language</a></button>
-  <button><a href="/caregiver">Pause</a></button>
+
+  <div class="card">
+    <h1>My Profile</h1>
+
+    <form id="profileForm">
+      <label>Email</label>
+        <input type="email" name="contact_email"
+            value="<%= user.contact_email || '' %>" required>
+
+        <label>Phone Number</label>
+        <input type="text" name="contact_phone"
+            value="<%= user.contact_phone || '' %>" required>
+
+        <label>Address</label>
+        <input type="text" name="contact_address"
+            value="<%= user.contact_address || '' %>" required>
 
 
-  <section>
-    <h2>My Info</h2>
-    <p><strong>Name:</strong> <%= caregiver.contact_name || 'N/A' %></p>
-    <p><strong>Username:</strong> <%= caregiver.c_username || 'N/A' %></p>
-    <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
-    <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
-    <p><strong>Address:</strong> <%= caregiver.address || 'N/A' %></p>
-  </section>
+      <button type="submit">Save Changes</button>
+      <div id="status"></div>
 
-  <section>
-    <h2>Elderly Under My Care</h2>
-    <% if (!elderlies || elderlies.length === 0) { %>
-      <p>No elderly linked to you.</p>
-    <% } else { %>
-      <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Username</th>
-            <th>Address</th>
-            <th>Preferred Language</th>
-            <th>Condition</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% elderlies.forEach(e => { %>
-            <tr>
-              <td><%= e.name || 'N/A' %></td>
-              <td><%= e.u_elderly_username || 'N/A' %></td>
-              <td><%= e.address || 'N/A' %></td>
-              <td><%= e.language_preference || 'N/A' %></td>
-              <td><%= e.condition_special_consideration || 'N/A' %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    <% } %>
-  </section>
+      <a href="/caregiver"><- Back to Dashboard</a>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = Object.fromEntries(new FormData(e.target));
+
+      const res = await fetch("/api/caregiver/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+      const status = document.getElementById("status");
+
+      if (data.success) {
+        status.textContent = "Profile updated successfully";
+        status.className = "success";
+      } else {
+        status.textContent = "Failed to update profile";
+        status.className = "error";
+      }
+    });
+  </script>
+
 </body>
 </html>

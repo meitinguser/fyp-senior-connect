@@ -630,9 +630,8 @@ app.get("/caregiver", requireCaregiver, async (req, res) => {
 });
 
 
-
-
-
+// OLD version of caregiverprofile = caregiverprofileold
+/*
 app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
   try {
     const caregiver = req.user;
@@ -725,6 +724,52 @@ const checkinLogs = logsRes.data.result || [];
   } catch (err) {
     console.error("[CARE PROFILE] Fatal error:", err);
     res.status(500).send("Error loading caregiver profile");
+  }
+});
+*/
+
+app.get("/caregiver/profile", requireCaregiver, (req, res) => {
+  res.render("caregiverprofile", {
+    user: req.user
+  });
+});
+
+app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
+  const caregiverSysId = req.user.sys_id;
+
+  const {
+    contact_email,
+    contact_phone,
+    contact_address
+  } = req.body;
+
+  if (!contact_email || !contact_phone || !contact_address) {
+    return res.status(400).json({ success: false, error: "Missing fields" });
+  }
+
+  try {
+    await axios.put(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person/${caregiverSysId}`,
+      {
+        contact_email,
+        contact_phone,
+        contact_address
+      },
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+
+    // Keep session in sync
+    req.user.contact_email = contact_email;
+    req.user.contact_phone = contact_phone;
+    req.user.contact_address = contact_address;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Caregiver update error:", err.response?.data || err.message);
+    res.status(500).json({ success: false });
   }
 });
 
@@ -1173,7 +1218,9 @@ app.get('/api/caregiver/elderly', async (req, res) => {
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
-      method: row.method || row.u_method || "NA"
+      method: row.method || row.u_method || "NA",
+      points: row.points || row.u_points || "NA",
+
     }));
 
     res.json({ success: true, elderly: cleaned });

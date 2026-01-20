@@ -194,8 +194,8 @@
     <p><strong>Username:</strong> <%= caregiver.c_username || 'N/A' %></p>
     <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
     <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
-    <p><strong>Address:</strong> <%= caregiver.address || 'N/A' %></p>
-    <button><a href="/caregiver">Edit Profile</a></button>
+    <p><strong>Address:</strong> <%= caregiver.contact_address || 'N/A' %></p>
+    <button><a href="/caregiver/profile">Edit Profile</a></button>
   </section>
   </div>
 
@@ -237,6 +237,7 @@
         <th>Name</th>
         <th>Condition</th>
         <th>Language Preference</th>
+        <th>Points</th>
         <th>Check-In Status</th>
         <th>Active/Inactive</th>
       </tr>
@@ -400,6 +401,7 @@
             <td>${person.name}</td>
             <td>${person.condition || "-"}</td>
             <td>${createLanguageDropdown(person)}</td>
+            <td>${person.points}</td>
             <td class="${cssClass}">${displayText}</td>
             <td><button class="${pauseClass}" data-name="${person.name}" data-status="${status}">${buttonLabel}</button></td>
           </tr>
