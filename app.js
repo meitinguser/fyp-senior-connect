@@ -582,10 +582,76 @@ function requireAIC(req, res, next) {
   return res.redirect("/profile");
 }
 
-app.get("/caregiver", requireCaregiver, (req, res) => {
-  res.render("caregiver", { user: req.user });
+app.get("/caregiver", requireCaregiver, async (req, res) => {
+  try {
+    const caregiver = req.user; // logged-in caregiver
+    const caregiverId = caregiver.person_id; // string
+
+    // Fetch all support roles
+    const supportRolesRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_limit: 100 }
+      }
+    );
+
+    const allRoles = supportRolesRes.data.result || [];
+
+    // Filter only roles linked to this caregiver
+    const caregiverRoles = allRoles.filter(r => {
+      // Extract the actual ID from the reference object
+      const pid = r.person_id?.value || r.person_id; // fallback in case it's not an object
+      return String(pid) === String(caregiverId) && (r.is_caregiver === true || r.is_caregiver === "true");
+    });
+
+    // Fetch linked elderlies by elderly_id
+    const elderlyList = await Promise.all(
+      caregiverRoles.map(async r => {
+        const elderlyId = r.elderly_id?.value || r.elderly_id;
+        if (!elderlyId) return null;
+
+        const resElderly = await axios.get(
+          `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+          {
+            auth: { username: SN_USER, password: SN_PASS },
+            params: { sysparm_query: `elderly_id=${elderlyId}`, sysparm_limit: 1 }
+          }
+        );
+
+        return resElderly.data.result?.[0] || null;
+      })
+    );
+
+    const linkedElderlies = elderlyList.filter(e => e !== null);
+
+    // Fetch check-in logs
+    const logsRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_query: "ORDERBYDESCsys_created_on" }
+      }
+    );
+
+    const checkinLogs = logsRes.data.result || [];
+
+    // Render caregiver page with linked elderlies
+    res.render("caregiver", {
+      caregiver,                // pass as 'caregiver' so template finds it
+      elderlies: linkedElderlies,
+      checkinLogs
+    });
+
+  } catch (err) {
+    console.error("[CAREGIVER] Fatal error:", err.message);
+    res.status(500).send("Error loading caregiver page");
+  }
 });
 
+
+// OLD version of caregiverprofile = caregiverprofileold
+/*
 app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
   try {
     const caregiver = req.user;
@@ -678,6 +744,52 @@ app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
   } catch (err) {
     console.error("[CARE PROFILE] Fatal error:", err);
     res.status(500).send("Error loading caregiver profile");
+  }
+});
+*/
+
+app.get("/caregiver/profile", requireCaregiver, (req, res) => {
+  res.render("caregiverprofile", {
+    user: req.user
+  });
+});
+
+app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
+  const caregiverSysId = req.user.sys_id;
+
+  const {
+    contact_email,
+    contact_phone,
+    contact_address
+  } = req.body;
+
+  if (!contact_email || !contact_phone || !contact_address) {
+    return res.status(400).json({ success: false, error: "Missing fields" });
+  }
+
+  try {
+    await axios.put(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person/${caregiverSysId}`,
+      {
+        contact_email,
+        contact_phone,
+        contact_address
+      },
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+
+    // Keep session in sync
+    req.user.contact_email = contact_email;
+    req.user.contact_phone = contact_phone;
+    req.user.contact_address = contact_address;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Caregiver update error:", err.response?.data || err.message);
+    res.status(500).json({ success: false });
   }
 });
 
@@ -985,11 +1097,12 @@ app.post("/login", (req, res, next) => {
 
         return res.json({
           success: true,
-          redirect: "/caregiver/profile"
+          redirect: "/caregiver"
         });
       }
 
       // ================= AIC =================
+<<<<<<< HEAD
       if (user.role === "aic") {
 
         res.cookie("aicId", user.sys_id, {
@@ -1002,6 +1115,9 @@ app.post("/login", (req, res, next) => {
           redirect: "/aic"
         });
       }
+=======
+      // Add code here
+>>>>>>> a300419472e20f9aaabb1371949dcaa14e281e1b
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
@@ -1139,7 +1255,9 @@ app.get('/api/caregiver/elderly', async (req, res) => {
       password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
-      method: row.method || row.u_method || "NA"
+      method: row.method || row.u_method || "NA",
+      points: row.points || row.u_points || "NA",
+
     }));
 
     res.json({ success: true, elderly: cleaned });

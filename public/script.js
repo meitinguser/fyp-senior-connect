@@ -341,7 +341,16 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.style.display = (gameMode === "puzzle") ? "block" : "none";
 
     const pieces = Array.from(document.querySelectorAll(".puzzle-piece"));
-    const puzzleImage = "/images/puzzle_bunny.jpg";
+    // Predefined puzzle image URLs
+    const puzzleImages = [
+    "/images/puzzle_bunny.jpg",
+    "/images/puzzle_cat.jpg",
+    "/images/puzzle_dog.png"
+    ];
+
+    // Randomly select one
+    const randomIndex = Math.floor(Math.random() * puzzleImages.length);
+    const puzzleImage = puzzleImages[randomIndex];
     const correctPositions = ["0% 0%", "100% 0%", "0% 100%", "100% 100%"];
 
     pieces.forEach((piece, i) => {

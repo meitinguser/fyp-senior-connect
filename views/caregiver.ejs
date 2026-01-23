@@ -6,7 +6,7 @@
   <title>Senior Connect - Caregiver Dashboard</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: #f4f6f9;
       margin: 0;
       padding: 20px;
@@ -15,8 +15,28 @@
     h1 {
       text-align: center;
       margin-bottom: 25px;
+      color: #002d62;
     }
 
+    /* --- Caregiver Profile --- */
+    section.profile {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    section.profile h2 {
+      margin-top: 0;
+      color: #002d62;
+    }
+
+    section.profile p {
+      margin: 5px 0;
+    }
+
+    /* --- Summary Cards --- */
     #summaryCards {
       display: flex;
       gap: 20px;
@@ -36,6 +56,7 @@
       margin: 5px 0;
     }
 
+    /* --- Elderly Table --- */
     #elderlyTable {
       width: 100%;
       background: white;
@@ -71,6 +92,7 @@
       font-weight: bold;
     }
 
+    /* --- Filters --- */
     #filterRow {
       margin: 15px 0;
       display: flex;
@@ -78,7 +100,6 @@
       gap: 15px;
     }
 
-    /* Language dropdown styling */
     .language-select {
       padding: 6px 10px;
       border: 1px solid #ccc;
@@ -90,7 +111,7 @@
     }
 
     .language-select:hover {
-      border-color:#002d62;
+      border-color: #002d62;
     }
 
     .language-select:focus {
@@ -114,13 +135,12 @@
       background: #fff0f0;
     }
 
-    /* Status message styling */
     .update-status {
       font-size: 12px;
       margin-top: 4px;
       font-style: italic;
     }
-    
+
     .update-status.success {
       color: green;
     }
@@ -129,47 +149,57 @@
       color: red;
     }
 
-/* Base button */
-.pause-btn {
-  padding: 6px 16px;
-  border-radius: 999px;
-  border: 3px solid transparent;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+    /* --- Pause Button --- */
+    .pause-btn {
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 3px solid transparent;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
 
-/* Active = blue */
-.pause-btn.active {
-  background: #e6f0ff;
-  color: #0055cc;
-  border-color: #0055cc;
-  font-weight: bold;
-}
+    .pause-btn.active {
+      background: #e6f0ff;
+      color: #0055cc;
+      border-color: #0055cc;
+      font-weight: bold;
+    }
 
-/* Inactive = red */
-.pause-btn.inactive {
-  background: #ffe6e6;
-  color: #cc0000;
-  border-color: #cc0000;
-  font-weight: bold;
-}
+    .pause-btn.inactive {
+      background: #ffe6e6;
+      color: #cc0000;
+      border-color: #cc0000;
+      font-weight: bold;
+    }
 
-/* Hover effect */
-.pause-btn:hover {
-  box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.15);
-}
+    .pause-btn:hover {
+      box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.15);
+    }
 
-/* Hover effect for inactive */
-.pause-btn.inactive:hover {
-  box-shadow: 0 0 0 2px rgba(176, 0, 32, 0.15);
-}
+    .pause-btn.inactive:hover {
+      box-shadow: 0 0 0 2px rgba(176, 0, 32, 0.15);
+    }
   </style>
 </head>
 
 <body>
   <h1>Caregiver Dashboard</h1>
 
+  <!-- Caregiver Profile Section -->
+  <div class="side-by-side">
+  <section class="profile">
+    <h2>My Profile</h2>
+    <p><strong>Name:</strong> <%= caregiver.contact_name || 'N/A' %></p>
+    <p><strong>Username:</strong> <%= caregiver.c_username || 'N/A' %></p>
+    <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
+    <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
+    <p><strong>Address:</strong> <%= caregiver.contact_address || 'N/A' %></p>
+    <button><a href="/caregiver/profile">Edit Profile</a></button>
+  </section>
+  </div>
+
+  <div class="side-by-side"></div>
   <!-- Summary Cards -->
   <div id="summaryCards">
     <div class="card">
@@ -185,11 +215,10 @@
       <p>Missed Today</p>
     </div>
   </div>
+</div>
 
   <!-- Filters -->
   <div id="filterRow">
-    
-
     <span>Senior:
       <select id="filterSelect">
         <option value="all">All Seniors</option>
@@ -200,7 +229,7 @@
     </span>
   </div>
 
-  <!-- Table -->
+  <!-- Elderly Table -->
   <table id="elderlyTable">
     <thead>
       <tr>
@@ -208,6 +237,7 @@
         <th>Name</th>
         <th>Condition</th>
         <th>Language Preference</th>
+        <th>Points</th>
         <th>Check-In Status</th>
         <th>Active/Inactive</th>
       </tr>
@@ -221,15 +251,13 @@
     let elderlyData = [];
     let checkinLogs = [];
 
-    // Define check-in ranges
     const MORNING_RANGE = ["06:00", "12:00"];
-    const NIGHT_RANGE = ["16:00", "22:00"]; 
+    const NIGHT_RANGE = ["16:00", "22:00"];
 
     function todayDate() {
-      return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      return new Date().toISOString().slice(0, 10);
     }
 
-    // --- Fetch data from ServiceNow via API ---
     async function load() {
       const eRes = await fetch("/api/caregiver/elderly");
       const cRes = await fetch("/api/caregiver/checkins");
@@ -240,15 +268,12 @@
       elderlyData = eData.elderly || [];
       checkinLogs = cData.checkins || [];
 
-      const statusFilter = document.getElementById("filterSelect").value;
-      renderDashboard(statusFilter);
+      renderDashboard(document.getElementById("filterSelect").value);
     }
 
-    // --- Determine today's status based on ranges ---
     function getTodayStatus(logs, morningRange = MORNING_RANGE, nightRange = NIGHT_RANGE) {
       const today = todayDate();
 
-      // 1️⃣ Check if a "checked in" log exists today
       for (let log of logs) {
         const logDate = log.timestamp || log.sys_created_on;
         if (!logDate) continue;
@@ -257,19 +282,16 @@
         }
       }
 
-      // 2️⃣ No log today → check if past end of ranges
       const now = new Date();
       const nowTime = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
 
       if (nowTime > morningRange[1] && nowTime < nightRange[0]) return "missed-morning";
       if (nowTime > nightRange[1]) return "missed-night";
 
-      return "none"; // Not yet missed
+      return "none";
     }
-    
-    // --- Update language preference in servicenow ---
+
     async function updateLanguagePreference(sysId, newLanguage, selectElement, statusElement) {
-      // Show updating state
       selectElement.classList.add('updating');
       selectElement.disabled = true;
       if (statusElement) {
@@ -278,106 +300,62 @@
       }
 
       try {
-        console.log(`Updating language for sys_id: ${sysId} to: ${newLanguage}`);
-
         const response = await fetch(`/api/caregiver/elderly/${sysId}/language`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            language_preference: newLanguage
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language_preference: newLanguage })
         });
 
         const data = await response.json();
 
         if (response.ok && data.success) {
-          // Success
-          console.log("Language updated successfully:", data);
           selectElement.classList.remove('updating');
           selectElement.classList.add('success');
-
           if (statusElement) {
             statusElement.textContent = "Updated";
             statusElement.className = "update-status success";
           }
-
-          // Update local data
           const person = elderlyData.find(e => e.id === sysId);
-          if (person) {
-            person.language_preference = newLanguage;
-          }
-
-          // Remove success styling after 3 seconds
-          setTimeout(() => {
-            selectElement.classList.remove('success');
-            if (statusElement) statusElement.textContent = "";
-          }, 3000);
-
+          if (person) person.language_preference = newLanguage;
+          setTimeout(() => { selectElement.classList.remove('success'); if (statusElement) statusElement.textContent = ""; }, 3000);
         } else {
-          // Error
-          console.error("Failed to update language:", data);
           selectElement.classList.remove('updating');
           selectElement.classList.add('error');
-
           if (statusElement) {
             statusElement.textContent = "Failed: " + (data.error || "Unknown error");
             statusElement.className = "update-status error";
           }
-
-          // Remove error styling after 5 seconds
-          setTimeout(() => {
-            selectElement.classList.remove('error');
-            if (statusElement) statusElement.textContent = "";
-          }, 5000);
-        } 
+          setTimeout(() => { selectElement.classList.remove('error'); if (statusElement) statusElement.textContent = ""; }, 5000);
+        }
       } catch (err) {
-        console.error("Network error updating language:", err);
+        console.error(err);
         selectElement.classList.remove('updating');
         selectElement.classList.add('error');
-
         if (statusElement) {
           statusElement.textContent = "Network error";
           statusElement.className = "update-status error";
         }
-
-        setTimeout(() => {
-          selectElement.classList.remove('error');
-          if (statusElement) statusElement.textContent = "";
-        }, 5000);
+        setTimeout(() => { selectElement.classList.remove('error'); if (statusElement) statusElement.textContent = ""; }, 5000);
       } finally {
-        selectElement.disabled = false; 
+        selectElement.disabled = false;
       }
     }
 
-    // --- Create language dropdown ---
     function createLanguageDropdown(person) {
       const currentLang = person.language_preference || "English";
       const languages = ["English", "Chinese", "Malay", "Tamil"];
-
       const containerId = `lang-container-${person.id}`;
-
-      let html = `<div id="${containerId}">`;
-      html += `<select class="language-select" data-sys-id="${person.id}" data-current-lang="${currentLang}">`;
-      
+      let html = `<div id="${containerId}"><select class="language-select" data-sys-id="${person.id}" data-current-lang="${currentLang}">`;
       languages.forEach(lang => {
-        const selected = lang === currentLang ? 'selected' : '';
-        html += `<option value="${lang}" ${selected}>${lang}</option>`;
+        html += `<option value="${lang}" ${lang === currentLang ? 'selected' : ''}>${lang}</option>`;
       });
-      
-      html += `</select>`;
-      html += `<div class="update-status" id="status-${person.id}"></div>`;
-      html += `</div>`;
-      
+      html += `</select><div class="update-status" id="status-${person.id}"></div></div>`;
       return html;
     }
 
-    // --- Render dashboard ---
     function renderDashboard(statusFilter = "all") {
       const body = document.getElementById("elderlyBody");
       body.innerHTML = "";
-
 
       let totalCount = 0;
       let checkedCount = 0;
@@ -385,7 +363,6 @@
       let missedNightCount = 0;
 
       elderlyData.forEach(person => {
-
         const logs = checkinLogs.filter(l => l.elderly_name === person.name);
         const status = getTodayStatus(logs);
 
@@ -408,65 +385,38 @@
           displayText = "missed (night)";
           cssClass = "status-missed";
           missedNightCount++;
-        } else {
-          displayText = "no log yet";
-          cssClass = "";
-        }
-        // Decide pause state from the latest log for today
-      let isPaused = false;
-      const today = todayDate();
+        } else displayText = "no log yet";
 
-      // logs are already filtered for this person; sort by timestamp descending
-      const todaysLogs = logs.filter(log => {
-        const logDate = (log.timestamp || "").slice(0, 10);
-        return logDate === today;
-      });
+        let isPaused = false;
+        const today = todayDate();
+        const todaysLogs = logs.filter(log => (log.timestamp || "").slice(0, 10) === today);
+        if (todaysLogs.length > 0 && (todaysLogs[0].is_check_in_paused === true || todaysLogs[0].is_check_in_paused === "true")) isPaused = true;
 
-      if (todaysLogs.length > 0) {
-        // assuming /api/caregiver/checkins returns newest first, take index 0
-        const latest = todaysLogs[0];
-        if (latest.is_check_in_paused === true || latest.is_check_in_paused === "true") {
-          isPaused = true;
-        }
-      }
-      
+        const buttonLabel = isPaused ? "Inactive" : "Active";
+        const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
 
-    const buttonLabel = isPaused ? "Inactive" : "Active";
-    const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
-
-    const row = `
-      <tr data-status="${status}">
-        <td>${person.elderly_username}</td>
-        <td>${person.name}</td>
-        <td>${person.condition || "-"}</td>
-          <td>${createLanguageDropdown(person)}</td>
-        <td class="${cssClass}">${displayText}</td>
-        <td>
-          <button class="${pauseClass}"
-                  data-name="${person.name}"
-                  data-status="${status}">
-            ${buttonLabel}
-          </button>
-        </td>
-      </tr>
-    `;
+        const row = `
+          <tr data-status="${status}">
+            <td>${person.elderly_username}</td>
+            <td>${person.name}</td>
+            <td>${person.condition || "-"}</td>
+            <td>${createLanguageDropdown(person)}</td>
+            <td>${person.points}</td>
+            <td class="${cssClass}">${displayText}</td>
+            <td><button class="${pauseClass}" data-name="${person.name}" data-status="${status}">${buttonLabel}</button></td>
+          </tr>
+        `;
         body.insertAdjacentHTML("beforeend", row);
       });
-      
-      // Add event listeners to all language dropdowns
+
       document.querySelectorAll('.language-select').forEach(select => {
-        select.addEventListener('change', function(e) {
+        select.addEventListener('change', function () {
           const sysId = this.dataset.sysId;
           const newLanguage = this.value;
           const statusElement = document.getElementById(`status-${sysId}`);
-
-          // Confirm change 
           if (confirm(`Change language preference to ${newLanguage}?`)) {
             updateLanguagePreference(sysId, newLanguage, this, statusElement);
-          } else {
-            // Revert to previous value if cancelled
-            this.value = this.dataset.currentLang;
-          }
+          } else this.value = this.dataset.currentLang;
         });
       });
 
@@ -475,87 +425,44 @@
       document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
     }
 
-    // --- Event listeners for filters ---
-    document.getElementById("filterSelect").addEventListener("change", e => {
-      const status = e.target.value;
-      renderDashboard(status);
+    document.getElementById("filterSelect").addEventListener("change", e => renderDashboard(e.target.value));
+
+    document.addEventListener("click", async (e) => {
+      if (!e.target.classList.contains("pause-btn")) return;
+      const btn = e.target;
+      const elderlyName = btn.getAttribute("data-name");
+      const currentlyActiveLabel = btn.textContent.trim().toLowerCase() === "active";
+      const targetState = currentlyActiveLabel ? "paused" : "active";
+      let absenceReason = "";
+
+      if (currentlyActiveLabel) {
+        while (true) {
+          const input = prompt("Please enter reason for inactivity:");
+          if (input === null) return;
+          absenceReason = input.trim();
+          if (absenceReason) break;
+          alert("Reason cannot be blank. Please enter a reason.");
+        }
+      }
+
+      try {
+        const res = await fetch("/api/caregiver/toggle-pause", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ elderly_name: elderlyName, target_state: targetState, absence_reason })
+        });
+        const data = await res.json();
+        if (!data.success) { alert("Failed to update pause status."); return; }
+        btn.textContent = currentlyActiveLabel ? "Inactive" : "Active";
+        btn.classList.toggle("active");
+        btn.classList.toggle("inactive");
+      } catch (err) {
+        console.error(err);
+        alert("Error talking to server.");
+      }
     });
 
-// Pause and Active Button
-document.addEventListener("click", async (e) => {
-  if (!e.target.classList.contains("pause-btn")) return;
-
-  const btn = e.target;
-  const elderlyName = btn.getAttribute("data-name");
-  const currentStatus = btn.getAttribute("data-status");
-
-  const currentlyActiveLabel = btn.textContent.trim().toLowerCase() === "active";
-  const targetState = currentlyActiveLabel ? "paused" : "active";
-
-  let absenceReason = "";
-
-
-if (currentlyActiveLabel) {
-  while (true) {
-    const input = prompt("Please enter reason for inactivity:");
-
-    if (input === null) {
-      
-      return;
-    }
-
-    absenceReason = input.trim();
-
-    if (absenceReason) {
-      
-      break;
-    }
-
-    alert("Reason cannot be blank. Please enter a reason.");
-  }
-}
-
-  try {
-    const res = await fetch("/api/caregiver/toggle-pause", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        elderly_name: elderlyName,
-        target_state: targetState,
-        current_status: currentStatus,
-        absence_reason: absenceReason,   
-      }),
-    });
-
-    const data = await res.json();
-    if (!data.success) {
-      alert("Failed to update pause status.");
-      return;
-    }
-
-    btn.textContent = currentlyActiveLabel ? "Inactive" : "Active";
-
-    if (currentlyActiveLabel) {
-      btn.classList.remove("active");
-      btn.classList.add("inactive");
-    } else {
-      btn.classList.remove("inactive");
-      btn.classList.add("active");
-    }
-  } catch (err) {
-    console.error("Pause toggle error", err);
-    alert("Error talking to server.");
-  }
-});
-
-
-    // --- Auto-refresh every minute ---
-    load().then(() => {
-      setInterval(() => {
-        load();
-      }, 60000);
-    });
+    load().then(() => setInterval(load, 60000));
   </script>
 </body>
-
-</html> 
+</html>
