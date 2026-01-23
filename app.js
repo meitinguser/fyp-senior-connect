@@ -102,7 +102,7 @@ async function getElderlyByUsername(username) {
 
     // User NOT Found
     if (!res.data?.result?.length) {
-      logAuth("User not found in ServiceNow", username);
+      logAuth("Elderly User not found in ServiceNow", username);
       return null;
     }
 
@@ -152,9 +152,7 @@ async function getElderlyByElderlyId(elderly_id) {
   return res.data.result?.[0] || null;
 }
 
-
-
-async function getCaregiverByUsername(username) {
+async function getUserByUsername(username) {
   const res = await axios.get(
     `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person`,
     {
@@ -165,17 +163,17 @@ async function getCaregiverByUsername(username) {
       auth: { username: SN_USER, password: SN_PASS }
     }
   );
-  
-    // User NOT Found
-    if (!res.data?.result?.length) {
-      logAuth("Caregiver not found in ServiceNow", username);
-      return null;
-    }
+
+  // User NOT Found
+  if (!res.data?.result?.length) {
+    logAuth("Caregiver not found in ServiceNow", username);
+    return null;
+  }
 
   return res.data.result[0] || null;
 }
 
-async function getCaregiverBySysId(sys_id) {
+async function getUserBySysId(sys_id) {
   const res = await axios.get(
     `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person/${sys_id}`,
     { auth: { username: SN_USER, password: SN_PASS } }
@@ -198,9 +196,6 @@ async function getSupportRolesForCaregiver(caregiver) {
   console.log("[CARE PROFILE LINKS]", res.data.result);
   return res.data.result || [];
 }
-
-
-
 
 // Helper: GET table from ServiceNow
 async function snGet(table, query = "") {
@@ -231,7 +226,7 @@ const ESCALATION_INTERVAL = 15 * 60 * 1000 // 15 minutes in milliseconds (1 min)
 
 const SESSION_WINDOWS = {
   morning: { start: "06:00", end: "12:00", name: "morning" },
-  night: { start: "18:00", end: "22:00", name: "night" }
+  night: { start: "16:00", end: "22:00", name: "night" }
 };
 
 // Track which sessions have been processed today to prevent duplicates
@@ -501,17 +496,32 @@ passport.use(
         });
       }
 
-      // ---- 2️⃣ Try Caregiver ----
-      const caregiver = await getCaregiverByUsername(username);
-      if (!caregiver) return done(null, false);
+      // ---- 2️⃣ Try AIC/Caregiver ----
+      const user = await getUserByUsername(username);
+      if (user) {
+        if (!user.c_password_hash) return done(null, false);
 
-      const match = await bcrypt.compare(password, caregiver.c_password_hash);
-      if (!match) return done(null, false);
+        const match = await bcrypt.compare(password, user.c_password_hash);
+        if (!match) return done(null, false);
 
-      return done(null, {
-        id: caregiver.sys_id,
-        role: "caregiver"
-      });
+        if (user.u_role.toLowerCase() === "aic") {
+          const role = "aic"
+          return done(null, {
+            id: user.sys_id,
+            role: role
+          });
+        } else if (user.u_role.toLowerCase() == "caregiver") {
+          const role = "caregiver";
+          return done(null, {
+            id: user.sys_id,
+            role: role
+          });
+        }
+      }
+
+      // ---- 3️⃣ No user found ----
+      logAuth("Login failed: user not found", username);
+      return done(null, false);
 
     } catch (err) {
       console.error("[AUTH] Passport error:", err.message);
@@ -537,8 +547,13 @@ passport.deserializeUser(async (sessionUser, done) => {
     }
 
     if (sessionUser.role === "caregiver") {
-      const caregiver = await getCaregiverBySysId(sessionUser.id);
+      const caregiver = await getUserBySysId(sessionUser.id);
       return done(null, { ...caregiver, role: "caregiver" });
+    }
+
+    if (sessionUser.role === "aic") {
+      const aic = await getUserBySysId(sessionUser.id);
+      return done(null, { ...aic, role: "aic" });
     }
 
     done(null, false);
@@ -546,8 +561,6 @@ passport.deserializeUser(async (sessionUser, done) => {
     done(err);
   }
 });
-
-
 
 function requireLogin(req, res, next) {
   if (req.isAuthenticated()) return next();
@@ -561,6 +574,13 @@ function requireCaregiver(req, res, next) {
   return res.redirect("/profile");
 }
 
+// test
+function requireAIC(req, res, next) {
+  if (req.isAuthenticated() && req.user?.role === "aic") {
+    return next();
+  }
+  return res.redirect("/profile");
+}
 
 app.get("/caregiver", requireCaregiver, async (req, res) => {
   try {
@@ -697,29 +717,29 @@ app.get("/caregiver/profile", requireCaregiver, async (req, res) => {
     );
 
     // fetch check-in logs (latest first)
-const logsRes = await axios.get(
-  `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
-  {
-    auth: { username: SN_USER, password: SN_PASS },
-    params: { sysparm_query: "ORDERBYDESCsys_created_on" }
-  }
-);
+    const logsRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        params: { sysparm_query: "ORDERBYDESCsys_created_on" }
+      }
+    );
 
-const checkinLogs = logsRes.data.result || [];
+    const checkinLogs = logsRes.data.result || [];
 
 
     // Filter out nulls
     const linkedElderlies = elderlyList.filter(e => e !== null);
-    
+
 
     console.log("[CARE PROFILE] Final linked elderlies:", linkedElderlies.map(e => e.name));
 
     // Render page
-   res.render("caregiverprofile", {
-  caregiver,
-  elderlies: linkedElderlies,
-  checkinLogs
-});
+    res.render("caregiverprofile", {
+      caregiver,
+      elderlies: linkedElderlies,
+      checkinLogs
+    });
 
   } catch (err) {
     console.error("[CARE PROFILE] Fatal error:", err);
@@ -773,13 +793,8 @@ app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
   }
 });
 
-/*
-app.post("/api/update-password", requireLogin, async (req, res) => {
-  const user = req.user; // works for caregiver or elderly
-  const { currentPassword, newPassword, confirmPassword } = req.body;
 
-});
-*/
+
 
 
 
@@ -1048,12 +1063,6 @@ app.get("/caregiver", (req, res) => {
 });
 // app.get("/caregiver", (req,res) => { res.render("caregiver")});
 
-app.get("/aic", (req, res) => {
-  res.render("aic", { 
-    user: req.user || null 
-  });
-});
-
 // Login
 app.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user) => {
@@ -1063,7 +1072,7 @@ app.post("/login", (req, res, next) => {
     }
 
     if (!user) {
-      console.warn("[LOGIN] Authentication failed");
+      console.warn("[LOGIN] Authentication failed", err.message);
       return res.status(401).json({ success: false });
     }
 
@@ -1092,9 +1101,20 @@ app.post("/login", (req, res, next) => {
       }
 
       // ================= AIC =================
-      // Add code here
-      
+      if (user.role === "aic") {
 
+        res.cookie("aicId", user.sys_id, {
+          maxAge: oneYear,
+          path: "/"
+        });
+
+        return res.json({
+          success: true,
+          redirect: "/aic"
+        });
+      }
+
+      // Add code here
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
@@ -1132,7 +1152,7 @@ app.post("/login", (req, res, next) => {
 
       // ================= UNKNOWN ROLE =================
       return res.status(400).json({ success: false });
-      
+
     });
   })(req, res, next);
 });
@@ -1241,6 +1261,123 @@ app.get('/api/caregiver/elderly', async (req, res) => {
   } catch (err) {
     console.error("SN elderly fetch error:", err.message);
     res.status(500).json({ success: false });
+  }
+});
+
+// For incident table
+app.get('/api/incidents', async (req, res) => {
+  try {
+    const { filter, includeInactive } = req.query; // Get filter parameter from query string
+
+    let query = "";
+
+    // Determine which states to include
+    if (includeInactive === "true") {
+      // Include all states (1-8)
+      query = "";
+    } else {
+      // Only active states (1,2,3)
+      query = "stateIN1,2,3";
+    }
+
+    // Add missed check-in filter if requested
+    if (filter === "missed") {
+      const missedQuery = "short_descriptionLIKEMissed check-in alert";
+      query = query ? `${query}^${missedQuery}` : missedQuery;
+    }
+
+    console.log(`[INCIDENTS] Fetching with query: ${query}`);
+
+    const data = await snGet("incident", query);
+
+    const cleaned = data.map(row => ({
+      sys_id: row.sys_id, // Include sys_id for updates
+      number: row.number || "NA",
+      opened_at: row.opened_at || "NA",
+      short_description: row.short_description || "NA",
+      priority: row.priority || "NA",
+      state: row.state || "NA",
+    }));
+
+    console.log(`[INCIDENTS] Found ${cleaned.length} incidents`);
+
+    res.json({ success: true, incident: cleaned });
+  } catch (err) {
+    console.error("SN incidents fetch error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update incident state
+app.put('/api/incidents/update-state', async (req, res) => {
+  const { sys_id, state } = req.body;
+
+  // Validation 
+  if (!sys_id) {
+    return res.status(400).json({
+      success: false,
+      error: "sys_id is required"
+    });
+  }
+
+  if (!state) {
+    return res.status(400).json({
+      success: false,
+      error: "state is required"
+    });
+  }
+
+  // Validate state value (1-8 are valid ServiceNow incident states)
+  const validStates = ["1", "2", "3", "6", "7", "8"];
+  if (!validStates.includes(state)) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid state value. Must be: 1 (New), 2 (In Progress), 3 (On Hold), 6 (Resolved), 7 (Closed), or 8 (Canceled)"
+    });
+  }
+
+  try {
+    console.log(`[INCIDENT UPDATE] Updating sys_id: ${sys_id} to state: ${state}`);
+
+    // Update the incident in ServiceNow 
+    const updateResponse = await axios.put(
+      `${SN_INSTANCE}/api/now/table/incident/${sys_id}`,
+      {
+        state: state
+      },
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+
+    console.log(`[INCIDENT UPDATE] Successfully updated to state: ${state}`);
+
+    // If the incidents was marked as Resolved, Closed, or Canceled
+    // Notify it will be removed from the dashboard on next refresh.
+    const inactiveStates = ["6", "7", "8"];
+    const willbeRemoved = inactiveStates.includes(state);
+
+    res.json({
+      success: true,
+      message: willbeRemoved
+        ? "Incident updated. It will be removed from the dashboard on next refresh."
+        : "Incident state updated successfully",
+      data: {
+        sys_id: sys_id,
+        state: state,
+        updated_record: updateResponse.data.result,
+        will_be_removed: willbeRemoved
+      }
+    });
+  } catch (err) {
+    console.error("[INCIDENT UPDATE] Error:", err.response?.data || err.message);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to update incident state",
+      details: err.response?.data || err.message
+    });
   }
 });
 
@@ -1432,6 +1569,22 @@ app.post("/checkin", async (req, res) => {
     const pointsEarned = 10;
     const newPoints = currentPoints + pointsEarned;
 
+    // Determine which session the check-in belongs to 
+    const currentTime = getCurrentSingaporeTime(); // Format: "HH:mm"
+    let session = "other"; // Default for check-ins outside session windows
+
+    // Check if within morning session (06:00 - 12:00)
+    if (currentTime >= SESSION_WINDOWS.morning.start && currentTime <= SESSION_WINDOWS.morning.end) {
+      session = "morning";
+    }
+
+    // Check if within night session (16:00 - 22:00)
+    else if (currentTime >= SESSION_WINDOWS.night.start && currentTime <= SESSION_WINDOWS.night.end) {
+      session = "night";
+    }
+
+    console.log(`[CHECK-IN] ${req.user.name} checking in at ${currentTime} - Session: ${session}`);
+
     // 2. Update points in ServiceNow
     await axios.patch(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${req.user.sys_id}`,
@@ -1439,7 +1592,7 @@ app.post("/checkin", async (req, res) => {
       { auth: { username: SN_USER, password: SN_PASS } }
     );
 
-    // 3. Log check-in (IMPORTANT)
+    // 3. Log check-in with session information (IMPORTANT)
     await axios.post(
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_check_in_log`,
       {
@@ -1447,7 +1600,8 @@ app.post("/checkin", async (req, res) => {
         name: req.user.name,
         status: "Checked In",
         timestamp: getSingaporeTimestamp(),
-        u_points_awarded: 10
+        u_points_awarded: 10,
+        session: session
       },
       { auth: { username: SN_USER, password: SN_PASS } }
     );
@@ -1456,7 +1610,9 @@ app.post("/checkin", async (req, res) => {
     res.json({
       success: true,
       pointsEarned,
-      totalPoints: newPoints
+      totalPoints: newPoints,
+      session: session,
+      sessionLabel: session.charAt(0).toUpperCase() + session.slice(1) // "Morning", "Night", or "Other"
     });
 
   } catch (err) {
