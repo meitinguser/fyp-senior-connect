@@ -579,7 +579,7 @@ function requireAIC(req, res, next) {
   if (req.isAuthenticated() && req.user?.role === "aic") {
     return next();
   }
-  return res.redirect("/profile");
+  return res.redirect("/aic");
 }
 
 app.get("/caregiver", requireCaregiver, async (req, res) => {
@@ -1062,6 +1062,14 @@ app.get("/caregiver", (req, res) => {
   });
 });
 // app.get("/caregiver", (req,res) => { res.render("caregiver")});
+
+
+
+app.get("/aic", requireAIC, (req, res) => {
+  res.render("aic", {
+    user: req.user || null
+  });
+});
 
 // Login
 app.post("/login", (req, res, next) => {
