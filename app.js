@@ -773,8 +773,13 @@ app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
   }
 });
 
+/*
+app.post("/api/update-password", requireLogin, async (req, res) => {
+  const user = req.user; // works for caregiver or elderly
+  const { currentPassword, newPassword, confirmPassword } = req.body;
 
-
+});
+*/
 
 
 
@@ -1043,6 +1048,12 @@ app.get("/caregiver", (req, res) => {
 });
 // app.get("/caregiver", (req,res) => { res.render("caregiver")});
 
+app.get("/aic", (req, res) => {
+  res.render("aic", { 
+    user: req.user || null 
+  });
+});
+
 // Login
 app.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user) => {
@@ -1071,16 +1082,19 @@ app.post("/login", (req, res, next) => {
         res.cookie("caregiverId", user.sys_id, {
           maxAge: oneYear,
           path: "/"
-        });
+        })
 
         return res.json({
           success: true,
           redirect: "/caregiver"
         });
+        
       }
 
       // ================= AIC =================
       // Add code here
+      
+
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
@@ -1317,6 +1331,43 @@ app.put("/api/caregiver/elderly/:sys_id/language", async (req, res) => {
     });
   }
 });
+
+// Change password route
+app.post("/api/caregiver/change-password", requireCaregiver, async (req, res) => {
+  const caregiver = req.user;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.json({ success: false, error: "Both current and new passwords are required." });
+  }
+
+  try {
+    // 1️⃣ Verify current password
+    const match = await bcrypt.compare(currentPassword, caregiver.password_hash || caregiver.u_password_hash);
+    if (!match) {
+      return res.json({ success: false, error: "Current password is incorrect." });
+    }
+
+    // 2️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10); // 10 salt rounds
+
+    // 3️⃣ Update in ServiceNow table
+    await axios.patch(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_support_person/${caregiver.sys_id}`,
+      { u_password_hash: hashedPassword }, // or password_hash if your table uses that
+      { auth: { username: SN_USER, password: SN_PASS }, headers: { "Content-Type": "application/json" } }
+    );
+
+    // 4️⃣ Optionally update session object
+    caregiver.password_hash = hashedPassword;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[PASSWORD CHANGE] Error:", err.response?.data || err.message);
+    res.json({ success: false, error: "Failed to update password." });
+  }
+});
+
 
 // ----------------- GET LANGUAGE PREFERENCE ------------------
 // Fetches the elderly person's preferred language from ServiceNow by sys_id

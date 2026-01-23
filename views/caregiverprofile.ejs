@@ -13,7 +13,7 @@
       max-width: 500px;
       margin: auto;
       background: white;
-      padding: 25px;
+      padding: 30px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
@@ -30,6 +30,7 @@
     input {
       width: 100%;
       padding: 10px;
+      padding-right: 20px;
       margin: 8px 8px 8px 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -63,7 +64,7 @@
 <body>
 
   <div class="card">
-    <h1>My Profile</h1>
+    <h1>My Profile: <%= user.contact_name %></h1>
 
     <form id="profileForm">
       <label>Email</label>
@@ -84,6 +85,27 @@
 
       <a href="/caregiver"><- Back to Dashboard</a>
     </form>
+
+    
+    <h3>Change Password</h3>
+        <form id="passwordForm">
+        <label for="currentPassword">Current Password:</label>
+        <input type="password" id="currentPassword" name="currentPassword" required>
+        <br>
+
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" name="newPassword" required>
+        <br>
+
+        <label for="confirmPassword">Confirm New Password:</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required>
+        <br>
+
+        <button type="submit">Update Password</button>
+        </form>
+
+    <div id="passwordStatus"></div>
+        
   </div>
 
   <script>
@@ -109,6 +131,44 @@
         status.className = "error";
       }
     });
+    
+    
+document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const currentPassword = document.getElementById("currentPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const statusEl = document.getElementById("passwordStatus");
+
+  statusEl.textContent = "Updating...";
+  statusEl.style.color = "black";
+
+  try {
+    const res = await fetch("/api/update-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      statusEl.textContent = data.message;
+      statusEl.style.color = "green";
+      // Clear form
+      document.getElementById("passwordForm").reset();
+    } else {
+      statusEl.textContent = data.error || "Failed to update password.";
+      statusEl.style.color = "red";
+    }
+  } catch (err) {
+    console.error("Password update error:", err);
+    statusEl.textContent = "Network error.";
+    statusEl.style.color = "red";
+  }
+});
+
+
   </script>
 
 </body>
