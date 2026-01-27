@@ -3,63 +3,116 @@
 <head>
   <title>My Profile</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      padding: 30px;
-    }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 30px;
+  }
 
-    .card {
-      max-width: 500px;
-      margin: auto;
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+  .profile-card {
+    max-width: 600px;
+    margin: auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+  h1 {
+    margin-top: 0;
+    color: #002d62;
+    text-align: center;
+  }
 
-    label {
-      font-weight: bold;
-    }
+  .info {
+    margin-bottom: 20px;
+  }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      padding-right: 20px;
-      margin: 8px 8px 8px 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
+  .info p {
+    margin: 6px 0;
+    color: #333;
+  }
 
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #002d62;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #002d62;
+  }
 
-    button:hover {
-      background: #00408f;
-    }
+  input[type="text"],
+  textarea {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  
+  input[type="email"],
+  textarea {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
 
-    #status {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: bold;
-    }
+  textarea {
+    resize: vertical;
+  }
 
-    .success { color: green; }
-    .error { color: red; }
-  </style>
+  button {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 15px;
+    background: #002d62;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #00408a;
+  }
+
+  #status {
+    margin-top: 12px;
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 25px;
+    text-align: center;
+    text-decoration: none;
+    color: #002d62;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .edit-profile-btns {
+    display: flex;
+    align-content: flex-start;
+    gap: 20px;
+  }
+
+  a {
+    color: white;
+  }
+</style>
+
 </head>
 <body>
 
@@ -80,10 +133,11 @@
             value="<%= user.contact_address || '' %>" required>
 
 
+      <div class="edit-profile-btns">
       <button type="submit">Save Changes</button>
+      <button><a href="/caregiver">Back to Dashboard</a></button>
+      </div>
       <div id="status"></div>
-
-      <a href="/caregiver"><- Back to Dashboard</a>
     </form>
 
     
@@ -124,10 +178,10 @@
       const status = document.getElementById("status");
 
       if (data.success) {
-        status.textContent = "Profile updated successfully";
+        status.textContent = "Caregiver profile updated successfully";
         status.className = "success";
       } else {
-        status.textContent = "Failed to update profile";
+        status.textContent = "Failed to update <%= user.name %> profile";
         status.className = "error";
       }
     });

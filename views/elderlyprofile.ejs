@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Edit Elderly </title>
+    <style>
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 30px;
+  }
+
+  .profile-card {
+    max-width: 600px;
+    margin: auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  h1 {
+    margin-top: 0;
+    color: #002d62;
+    text-align: center;
+  }
+
+  .info {
+    margin-bottom: 20px;
+  }
+
+  .info p {
+    margin: 6px 0;
+    color: #333;
+  }
+
+  label, strong {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #002d62;
+  }
+
+  input[type="text"],
+  textarea {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  button {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 15px;
+    background: #002d62;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #00408a;
+  }
+
+  #status {
+    margin-top: 12px;
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 25px;
+    text-align: center;
+    text-decoration: none;
+    color: #002d62;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  
+  .edit-profile-btns {
+    display: flex;
+    align-content: flex-start;
+    gap: 20px;
+  }
+
+  a {
+    color: white;
+  }
+    </style>
+</head>
+
+<body>
+    <h1>Edit Elderly Profile: <%= user.name %></h1>
+    <p><strong>Username</strong>
+        <%= user.u_elderly_username %>
+    </p>
+
+    <form id="elderlyForm">
+        <label>Address</label>
+        <input type="text" name="address" value="<%= user.address || '' %>" required>
+
+        <label>Condition / Special Consideration</label>
+        <textarea name="condition_special_consideration"
+            rows="4"><%= user.condition_special_consideration || '' %></textarea>
+
+        <div class="edit-profile-btns">
+        <button type="submit">Save</button>
+        <button><a href="/caregiver">Back to Dashboard</a></button>
+        </div>
+        <div id="status"></div>
+    </form>
+
+    <br>
+
+    <script>
+        const form = document.getElementById("elderlyForm");
+        const statusDiv = document.getElementById("status");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            statusDiv.textContent = "Saving...";
+
+            const formData = new FormData(form);
+            const body = Object.fromEntries(formData.entries());
+
+            try {
+                const res = await fetch(
+                    "/api/caregiver/elderly/<%= user.sys_id %>",
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    }
+                );
+
+                const data = await res.json();
+
+                if (data.success) {
+                    statusDiv.textContent = "Updated data for <%= user.name %> successfully";
+                } else {
+                    statusDiv.textContent = "Update failed";
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.textContent = "Server error";
+            }
+        });
+    </script>
+</body>
+
+</html>

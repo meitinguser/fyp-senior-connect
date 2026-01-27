@@ -36,6 +36,20 @@
       margin: 5px 0;
     }
 
+    button {
+    padding: 12px 12px;
+    font-size: 15px;
+    background: #002d62;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    }
+    
+    a {
+      color: white;
+    }
     /* --- Summary Cards --- */
     #summaryCards {
       display: flex;
@@ -180,6 +194,12 @@
     .pause-btn.inactive:hover {
       box-shadow: 0 0 0 2px rgba(176, 0, 32, 0.15);
     }
+    
+    .edit-profile-btns {
+    display: flex;
+    align-content: flex-start;
+    gap: 20px;
+  }
   </style>
 </head>
 
@@ -195,7 +215,7 @@
     <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
     <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
     <p><strong>Address:</strong> <%= caregiver.contact_address || 'N/A' %></p>
-    <button><a href="/caregiver/profile">Edit Profile</a></button>
+    <button class="edit-profile-btns"><a href="/caregiver/profile">Edit Profile</a></button>
   </section>
   </div>
 
@@ -233,6 +253,7 @@
   <table id="elderlyTable">
     <thead>
       <tr>
+        <th>Edit</th>
         <th>Username</th>
         <th>Name</th>
         <th>Condition</th>
@@ -246,6 +267,21 @@
       <!-- Filled by JS -->
     </tbody>
   </table>
+
+  <div id="editElderlyFormContainer" style="display:none;">
+    <h3>Edit Elderly Details</h3>
+    <form id="editElderlyForm">
+      <label>Address:</label>
+      <input type="text" name="address" required>
+      <label>Address:</label>
+      <input type="text" name="contact_address" required>
+      <label>Condition:</label>
+      <input type="text" name="condition_special_consideration">
+      <button type="submit">Save Changes</button>
+      <button type="button" id="cancelEdit">Cancel</button>
+      <div id="editStatus"></div>
+    </form>
+  </div>
 
   <script>
     let elderlyData = [];
@@ -390,13 +426,15 @@
         let isPaused = false;
         const today = todayDate();
         const todaysLogs = logs.filter(log => (log.timestamp || "").slice(0, 10) === today);
-        if (todaysLogs.length > 0 && (todaysLogs[0].is_check_in_paused === true || todaysLogs[0].is_check_in_paused === "true")) isPaused = true;
+        if (todaysLogs > 0 && (todaysLogs[0].is_check_in_paused === true || todaysLogs[0].is_check_in_paused === "true")) isPaused = true;
 
         const buttonLabel = isPaused ? "Inactive" : "Active";
         const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
 
         const row = `
           <tr data-status="${status}">
+            <td><button class="edit-btn" data-id="${person.id}">Edit</button></td>
+
             <td>${person.elderly_username}</td>
             <td>${person.name}</td>
             <td>${person.condition || "-"}</td>
@@ -462,7 +500,18 @@
       }
     });
 
+    document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("edit-btn")) {
+      const sysId = e.target.dataset.id;
+      window.location.href = `/elderly/profile/${sysId}`;
+    }
+  });
+
+
     load().then(() => setInterval(load, 60000));
+
   </script>
+
+
 </body>
 </html>

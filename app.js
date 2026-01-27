@@ -754,6 +754,12 @@ app.get("/caregiver/profile", requireCaregiver, (req, res) => {
   });
 });
 
+app.get("/elderly/profile", requireCaregiver, (req, res) => {
+  res.render("elderlyprofile", {
+    user: req.user
+  });
+});
+
 app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
   const caregiverSysId = req.user.sys_id;
 
@@ -789,6 +795,110 @@ app.put("/api/caregiver/profile", requireCaregiver, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("Caregiver update error:", err.response?.data || err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
+
+// GET elderly edit page (caregiver only)
+app.get("/elderly/profile/:sysId", requireCaregiver, async (req, res) => {
+  try {
+    const elderlySysId = req.params.sysId;
+    const caregiverSysId = req.user.sys_id;
+
+    // ✅ Correct relationship check
+    const linkRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        params: {
+          sysparm_query: `person_id=${caregiverSysId}^elderly_id=${elderlySysId}`,
+          sysparm_limit: 1
+        },
+        auth: { username: SN_USER, password: SN_PASS }
+      }
+    );
+
+    if (!linkRes.data.result || linkRes.data.result.length === 0) {
+      return res.status(403).send("Not authorised to edit this elderly");
+    }
+
+    // Fetch elderly data
+    const elderlyRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderlySysId}`,
+      {
+        auth: { username: SN_USER, password: SN_PASS }
+      }
+    );
+
+    // Render as user (matches EJS)
+    res.render("elderlyprofile", {
+      caregiver: req.user,
+      user: elderlyRes.data.result
+    });
+
+
+  } catch (err) {
+    console.error("Elderly profile load failed:", err.response?.data || err.message);
+    res.status(500).send("Failed to load elderly profile");
+  }
+});
+
+app.put("/api/caregiver/elderly/:sysId", requireCaregiver, async (req, res) => {
+  try {
+    const elderlySysId = req.params.sysId;
+    const caregiverSysId = req.user.sys_id;
+
+    // ✅ Correct relationship check
+    const linkRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        params: {
+          sysparm_query: `person_id=${caregiverSysId}^elderly_id=${elderlySysId}`,
+          sysparm_limit: 1
+        },
+        auth: { username: SN_USER, password: SN_PASS }
+      }
+    );
+
+    if (!linkRes.data.result || linkRes.data.result.length === 0) {
+      return res.status(403).json({ success: false, error: "Not authorised" });
+    }
+
+    const {
+      address,
+      condition_special_consideration
+    } = req.body;
+    console.log("[ELDERLY UPDATE BODY]", req.body);
+
+
+    if (!address) {
+      return res.status(400).json({
+        success: false,
+        error: "Address is required"
+      });
+    }
+
+
+    await axios.put(
+      
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderlySysId}`,
+      {
+        address,
+        condition_special_consideration
+      },
+      {
+        auth: { username: SN_USER, password: SN_PASS },
+        headers: { "Content-Type": "application/json" },
+        
+      }
+      
+    );
+    res.json({ success: true });
+
+  } catch (err) {
+    
+    console.log("[ELDERLY UPDATE BODY]", req.body);
+    console.error("Update elderly failed:", err.response?.data || err.message);
     res.status(500).json({ success: false });
   }
 });
@@ -1249,15 +1359,16 @@ app.get('/api/caregiver', async (req, res) => {
   }
 });
 
+/*
 app.get('/api/caregiver/elderly', async (req, res) => {
   try {
     const data = await snGet("x_1855398_elderl_0_elderly_data");
+
 
     const cleaned = data.map(row => ({
       id: row.sys_id || row.u_sys_id || "NA",
       name: row.name || row.u_name || "NA",
       elderly_username: row.elderly_username || row.u_elderly_username || "NA",
-      password_hash: row.password_hash || row.u_password_hash || "NA",
       condition: row.condition_special_consideration || row.u_condition_special_consideration || "NA",
       language_preference: row.language_preference || row.u_language_preference || "NA",
       method: row.method || row.u_method || "NA",
@@ -1271,6 +1382,61 @@ app.get('/api/caregiver/elderly', async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+*/
+
+app.get("/api/caregiver/elderly", requireCaregiver, async (req, res) => {
+  try {
+    const caregiverSysId = req.user.sys_id;
+
+    // 1. Get relationships
+    const linkRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_support_role`,
+      {
+        params: {
+          sysparm_query: `person_id=${caregiverSysId}`,
+          sysparm_fields: "elderly_id"
+        },
+        auth: { username: SN_USER, password: SN_PASS }
+      }
+    );
+
+    const links = linkRes.data.result || [];
+
+    if (links.length === 0) {
+      return res.json({ success: true, elderly: [] });
+    }
+
+    // 2. Extract elderly sys_ids
+    const elderlyIds = links.map(l => l.elderly_id).join(",");
+
+    // 3. Fetch ONLY those elderlies
+    const elderlyRes = await axios.get(
+      `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data`,
+      {
+        params: {
+          sysparm_query: `sys_idIN${elderlyIds}`
+        },
+        auth: { username: SN_USER, password: SN_PASS }
+      }
+    );
+
+    const cleaned = elderlyRes.data.result.map(row => ({
+      id: row.sys_id,
+      name: row.name,
+      elderly_username: row.u_elderly_username,
+      condition: row.condition_special_consideration,
+      language_preference: row.language_preference,
+      points: row.u_points || 0
+    }));
+
+    res.json({ success: true, elderly: cleaned });
+
+  } catch (err) {
+    console.error("Filtered elderly fetch failed:", err.response?.data || err.message);
+    res.status(500).json({ success: false });
+  }
+});
+
 
 // For incident table
 app.get('/api/incidents', async (req, res) => {
