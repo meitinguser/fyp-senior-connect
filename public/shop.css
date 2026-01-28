@@ -73,6 +73,11 @@ body {
     color: #666;
 }
 
+.item-image {
+    width: 200px;
+    height: 200px;
+}
+
 /* Footer */
 .item-footer {
     display: flex;
