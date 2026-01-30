@@ -119,11 +119,11 @@
             rows="4"><%= user.condition_special_consideration || '' %></textarea>
 
         <div class="edit-profile-btns">
-        <button type="submit">Save</button>
-        <button><a href="/caregiver">Back to Dashboard</a></button>
-        </div>
-        <div id="status"></div>
-    </form>
+      <button type="submit">Save Changes</button>
+      </form>
+      <button><a href="/caregiver">Back to Dashboard</a></button>
+      </div>
+      <div id="status"></div>
 
     
     <h3>Change Password</h3>
@@ -180,6 +180,34 @@
                 statusDiv.textContent = "Server error";
             }
         });
+
+        document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const currentPassword = document.getElementById("currentPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if (newPassword !== confirmPassword) {
+    return alert("New passwords do not match");
+  }
+
+  const res = await fetch("/api/elderly/password/<%= user.sys_id %> ", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    alert("Password updated successfully");
+    e.target.reset();
+  } else {
+    alert(data.error || "Failed to update password");
+  }
+});
+
     </script>
 </body>
 

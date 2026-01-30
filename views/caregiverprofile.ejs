@@ -135,10 +135,10 @@
 
       <div class="edit-profile-btns">
       <button type="submit">Save Changes</button>
+      </form>
       <button><a href="/caregiver">Back to Dashboard</a></button>
       </div>
       <div id="status"></div>
-    </form>
 
     
     <h3>Change Password</h3>
@@ -185,42 +185,33 @@
         status.className = "error";
       }
     });
-    
-    
-document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+    document.getElementById("passwordForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const currentPassword = document.getElementById("currentPassword").value;
   const newPassword = document.getElementById("newPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
-  const statusEl = document.getElementById("passwordStatus");
 
-  statusEl.textContent = "Updating...";
-  statusEl.style.color = "black";
+  if (newPassword !== confirmPassword) {
+    return alert("New passwords do not match");
+  }
 
-  try {
-    const res = await fetch("/api/update-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
-    });
+  const res = await fetch("/api/caregiver/password", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
 
-    const data = await res.json();
-    if (data.success) {
-      statusEl.textContent = data.message;
-      statusEl.style.color = "green";
-      // Clear form
-      document.getElementById("passwordForm").reset();
-    } else {
-      statusEl.textContent = data.error || "Failed to update password.";
-      statusEl.style.color = "red";
-    }
-  } catch (err) {
-    console.error("Password update error:", err);
-    statusEl.textContent = "Network error.";
-    statusEl.style.color = "red";
+  const data = await res.json();
+
+  if (data.success) {
+    alert("Password updated successfully");
+    e.target.reset();
+  } else {
+    alert(data.error || "Failed to update password");
   }
 });
+
 
 
   </script>
