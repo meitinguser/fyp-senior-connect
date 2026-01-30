@@ -579,7 +579,7 @@ function requireAIC(req, res, next) {
   if (req.isAuthenticated() && req.user?.role === "aic") {
     return next();
   }
-  return res.redirect("/aic");
+  return res.redirect("/profile");
 }
 
 app.get("/caregiver", requireCaregiver, async (req, res) => {
