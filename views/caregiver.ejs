@@ -36,6 +36,20 @@
       margin: 5px 0;
     }
 
+    button {
+    padding: 12px 12px;
+    font-size: 15px;
+    background: #002d62;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    }
+    
+    a {
+      color: white;
+    }
     /* --- Summary Cards --- */
     #summaryCards {
       display: flex;
@@ -180,6 +194,12 @@
     .pause-btn.inactive:hover {
       box-shadow: 0 0 0 2px rgba(176, 0, 32, 0.15);
     }
+    
+    .edit-profile-btns {
+    display: flex;
+    align-content: flex-start;
+    gap: 20px;
+  }
   </style>
 </head>
 
@@ -195,7 +215,7 @@
     <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
     <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
     <p><strong>Address:</strong> <%= caregiver.contact_address || 'N/A' %></p>
-    <button><a href="/caregiver/profile">Edit Profile</a></button>
+    <button class="edit-profile-btns"><a href="/caregiver/profile">Edit Profile</a></button>
   </section>
   </div>
 
@@ -233,6 +253,7 @@
   <table id="elderlyTable">
     <thead>
       <tr>
+        <th>Edit</th>
         <th>Username</th>
         <th>Name</th>
         <th>Condition</th>
@@ -246,6 +267,21 @@
       <!-- Filled by JS -->
     </tbody>
   </table>
+
+  <div id="editElderlyFormContainer" style="display:none;">
+    <h3>Edit Elderly Details</h3>
+    <form id="editElderlyForm">
+      <label>Address:</label>
+      <input type="text" name="address" required>
+      <label>Address:</label>
+      <input type="text" name="contact_address" required>
+      <label>Condition:</label>
+      <input type="text" name="condition_special_consideration">
+      <button type="submit">Save Changes</button>
+      <button type="button" id="cancelEdit">Cancel</button>
+      <div id="editStatus"></div>
+    </form>
+  </div>
 
   <script>
     let elderlyData = [];
@@ -353,116 +389,199 @@
       return html;
     }
 
-    function renderDashboard(statusFilter = "all") {
-      const body = document.getElementById("elderlyBody");
-      body.innerHTML = "";
+function renderDashboard(statusFilter = "all") {
+  const body = document.getElementById("elderlyBody");
+  body.innerHTML = "";
 
-      let totalCount = 0;
-      let checkedCount = 0;
-      let missedMorningCount = 0;
-      let missedNightCount = 0;
+  let totalCount = 0;
+  let checkedCount = 0;
+  let missedMorningCount = 0;
+  let missedNightCount = 0;
 
-      elderlyData.forEach(person => {
-        const logs = checkinLogs.filter(l => l.elderly_name === person.name);
-        const status = getTodayStatus(logs);
+  elderlyData.forEach(person => {
+    const logs = checkinLogs.filter(l => l.elderly_name === person.name);
+    const status = getTodayStatus(logs);
 
-        if (statusFilter !== "all" && status !== statusFilter) return;
+    if (statusFilter !== "all" && status !== statusFilter) return;
 
-        totalCount++;
+    totalCount++;
 
-        let displayText = "";
-        let cssClass = "";
+    let displayText = "";
+    let cssClass = "";
 
-        if (status === "checked") {
-          displayText = "checked in";
-          cssClass = "status-ok";
-          checkedCount++;
-        } else if (status === "missed-morning") {
-          displayText = "missed (morning)";
-          cssClass = "status-missed";
-          missedMorningCount++;
-        } else if (status === "missed-night") {
-          displayText = "missed (night)";
-          cssClass = "status-missed";
-          missedNightCount++;
-        } else displayText = "no log yet";
+    if (status === "checked") {
+      displayText = "checked in";
+      cssClass = "status-ok";
+      checkedCount++;
+    } else if (status === "missed-morning") {
+      displayText = "missed (morning)";
+      cssClass = "status-missed";
+      missedMorningCount++;
+    } else if (status === "missed-night") {
+      displayText = "missed (night)";
+      cssClass = "status-missed";
+      missedNightCount++;
+    } else displayText = "no log yet";
 
-        let isPaused = false;
-        const today = todayDate();
-        const todaysLogs = logs.filter(log => (log.timestamp || "").slice(0, 10) === today);
-        if (todaysLogs.length > 0 && (todaysLogs[0].is_check_in_paused === true || todaysLogs[0].is_check_in_paused === "true")) isPaused = true;
-
-        const buttonLabel = isPaused ? "Inactive" : "Active";
-        const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
-
-        const row = `
-          <tr data-status="${status}">
-            <td>${person.elderly_username}</td>
-            <td>${person.name}</td>
-            <td>${person.condition || "-"}</td>
-            <td>${createLanguageDropdown(person)}</td>
-            <td>${person.points}</td>
-            <td class="${cssClass}">${displayText}</td>
-            <td><button class="${pauseClass}" data-name="${person.name}" data-status="${status}">${buttonLabel}</button></td>
-          </tr>
-        `;
-        body.insertAdjacentHTML("beforeend", row);
-      });
-
-      document.querySelectorAll('.language-select').forEach(select => {
-        select.addEventListener('change', function () {
-          const sysId = this.dataset.sysId;
-          const newLanguage = this.value;
-          const statusElement = document.getElementById(`status-${sysId}`);
-          if (confirm(`Change language preference to ${newLanguage}?`)) {
-            updateLanguagePreference(sysId, newLanguage, this, statusElement);
-          } else this.value = this.dataset.currentLang;
-        });
-      });
-
-      document.getElementById("totalElderly").textContent = totalCount;
-      document.getElementById("checkedInToday").textContent = checkedCount;
-      document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
+    let isPaused = false;
+    if (person.is_check_in_paused === true || person.is_check_in_paused === "true") {
+      isPaused = true;
+      console.log(`[RENDER] ${person.name} is paused (from elderly_data)`);
+    } else {
+      
+      const today = todayDate();
+      const todaysLogs = logs.filter(log => (log.timestamp || "").slice(0, 10) === today);
+      
+      if (todaysLogs.length > 0) {
+        const latestLog = todaysLogs[0];
+        if (latestLog.is_check_in_paused === true || latestLog.is_check_in_paused === "true") {
+          isPaused = true;
+          console.log(`[RENDER] ${person.name} is paused (from today's log)`);
+        }
+      }
     }
+
+    const buttonLabel = isPaused ? "Inactive" : "Active";
+    const pauseClass = isPaused ? "pause-btn inactive" : "pause-btn active";
+
+    console.log(`[RENDER] ${person.name}: isPaused=${isPaused}, buttonLabel=${buttonLabel}`);
+
+    const row = `
+      <tr data-status="${status}">
+        <td><button class="edit-btn" data-id="${person.id}">Edit</button></td>
+        <td>${person.elderly_username}</td>
+        <td>${person.name}</td>
+        <td>${person.condition || "-"}</td>
+        <td>${createLanguageDropdown(person)}</td>
+        <td>${person.points}</td>
+        <td class="${cssClass}">${displayText}</td>
+        <td><button class="${pauseClass}" data-name="${person.name}" data-status="${status}">${buttonLabel}</button></td>
+      </tr>
+    `;
+    body.insertAdjacentHTML("beforeend", row);
+  });
+
+  document.querySelectorAll('.language-select').forEach(select => {
+    select.addEventListener('change', function () {
+      const sysId = this.dataset.sysId;
+      const newLanguage = this.value;
+      const statusElement = document.getElementById(`status-${sysId}`);
+      if (confirm(`Change language preference to ${newLanguage}?`)) {
+        updateLanguagePreference(sysId, newLanguage, this, statusElement);
+      } else this.value = this.dataset.currentLang;
+    });
+  });
+
+  document.getElementById("totalElderly").textContent = totalCount;
+  document.getElementById("checkedInToday").textContent = checkedCount;
+  document.getElementById("missedToday").textContent = missedMorningCount + missedNightCount;
+}
 
     document.getElementById("filterSelect").addEventListener("change", e => renderDashboard(e.target.value));
 
     document.addEventListener("click", async (e) => {
-      if (!e.target.classList.contains("pause-btn")) return;
-      const btn = e.target;
-      const elderlyName = btn.getAttribute("data-name");
-      const currentlyActiveLabel = btn.textContent.trim().toLowerCase() === "active";
-      const targetState = currentlyActiveLabel ? "paused" : "active";
-      let absenceReason = "";
+  if (!e.target.classList.contains("pause-btn")) return;
+  const btn = e.target;
+  const elderlyName = btn.getAttribute("data-name");
+  const currentlyActiveLabel = btn.textContent.trim().toLowerCase() === "active";
+  const targetState = currentlyActiveLabel ? "paused" : "active";
+  let absenceReason = "";
 
-      if (currentlyActiveLabel) {
-        while (true) {
-          const input = prompt("Please enter reason for inactivity:");
-          if (input === null) return;
-          absenceReason = input.trim();
-          if (absenceReason) break;
-          alert("Reason cannot be blank. Please enter a reason.");
-        }
-      }
+  console.log("[FRONTEND] Button clicked");
+  console.log("[FRONTEND] Elderly name:", elderlyName);
+  console.log("[FRONTEND] Current state:", currentlyActiveLabel ? "active" : "inactive");
+  console.log("[FRONTEND] Target state:", targetState);
 
-      try {
-        const res = await fetch("/api/caregiver/toggle-pause", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ elderly_name: elderlyName, target_state: targetState, absence_reason })
-        });
-        const data = await res.json();
-        if (!data.success) { alert("Failed to update pause status."); return; }
-        btn.textContent = currentlyActiveLabel ? "Inactive" : "Active";
-        btn.classList.toggle("active");
-        btn.classList.toggle("inactive");
-      } catch (err) {
-        console.error(err);
-        alert("Error talking to server.");
+  
+  if (currentlyActiveLabel) {
+    while (true) {
+      const input = prompt("Please enter reason for inactivity:");
+      if (input === null) {
+        console.log("[FRONTEND] User cancelled");
+        return;
       }
+      absenceReason = input.trim();
+      if (absenceReason) break;
+      alert("Reason cannot be blank. Please enter a reason.");
+    }
+    console.log("[FRONTEND] Absence reason:", absenceReason);
+  }
+
+  
+  btn.disabled = true;
+  const originalText = btn.textContent;
+
+  try {
+    console.log("[FRONTEND] Sending request...");
+    const res = await fetch("/api/caregiver/toggle-pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        elderly_name: elderlyName, 
+        target_state: targetState, 
+        absence_reason: absenceReason 
+      })
     });
 
+    console.log("[FRONTEND] Response status:", res.status);
+    console.log("[FRONTEND] Response ok:", res.ok);
+
+   
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("[FRONTEND] Server returned error:", errorText);
+      alert(`Server error (${res.status}): ${errorText}`);
+      btn.disabled = false;
+      return;
+    }
+
+    
+    let data;
+    try {
+      data = await res.json();
+      console.log("[FRONTEND] Response data:", data);
+    } catch (parseErr) {
+      console.error("[FRONTEND] Failed to parse JSON:", parseErr);
+      alert("Server returned invalid response");
+      btn.disabled = false;
+      return;
+    }
+
+    if (!data.success) {
+      console.error("[FRONTEND] Operation failed:", data.message);
+      alert("Failed to update pause status: " + (data.message || "Unknown error"));
+      btn.disabled = false;
+      return;
+    }
+
+    console.log("[FRONTEND] Success! Updating button...");
+    btn.textContent = currentlyActiveLabel ? "Inactive" : "Active";
+    btn.classList.toggle("active");
+    btn.classList.toggle("inactive");
+    btn.disabled = false;
+    
+    console.log("[FRONTEND] Button updated successfully");
+
+  } catch (err) {
+    console.error("[FRONTEND] Network error:", err);
+    console.error("[FRONTEND] Error details:", err.message);
+    alert("Error talking to server: " + err.message);
+    btn.disabled = false;
+  }
+});
+
+    document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("edit-btn")) {
+      const sysId = e.target.dataset.id;
+      window.location.href = `/elderly/profile/${sysId}`;
+    }
+  });
+
+
     load().then(() => setInterval(load, 60000));
+
   </script>
+
+
 </body>
 </html>

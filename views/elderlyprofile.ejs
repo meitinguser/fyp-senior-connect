@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>My Profile</title>
-  <style>
+    <title>Edit Elderly </title>
+    <style>
   body {
     font-family: "Segoe UI", Arial, sans-serif;
     background: #f4f6f9;
@@ -34,7 +35,7 @@
     color: #333;
   }
 
-  label {
+  label, strong {
     display: block;
     margin-top: 15px;
     font-weight: 600;
@@ -42,17 +43,6 @@
   }
 
   input[type="text"],
-  textarea {
-    width: 100%;
-    margin-top: 6px;
-    padding: 10px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  
-  input[type="email"],
   textarea {
     width: 100%;
     margin-top: 6px;
@@ -101,7 +91,7 @@
   .back-link:hover {
     text-decoration: underline;
   }
-
+  
   .edit-profile-btns {
     display: flex;
     align-content: flex-start;
@@ -111,29 +101,24 @@
   a {
     color: white;
   }
-</style>
-
+    </style>
 </head>
+
 <body>
+    <h1>Edit Elderly Profile: <%= user.name %></h1>
+    <p><strong>Username</strong>
+        <%= user.u_elderly_username %>
+    </p>
 
-  <div class="card">
-    <h1>My Profile: <%= user.contact_name %></h1>
-
-    <form id="profileForm">
-      <label>Email</label>
-        <input type="email" name="contact_email"
-            value="<%= user.contact_email || '' %>" required>
-
-        <label>Phone Number</label>
-        <input type="text" name="contact_phone"
-            value="<%= user.contact_phone || '' %>" required>
-
+    <form id="elderlyForm">
         <label>Address</label>
-        <input type="text" name="contact_address"
-            value="<%= user.contact_address || '' %>" required>
+        <input type="text" name="address" value="<%= user.address || '' %>" required>
 
+        <label>Condition / Special Consideration</label>
+        <textarea name="condition_special_consideration"
+            rows="4"><%= user.condition_special_consideration || '' %></textarea>
 
-      <div class="edit-profile-btns">
+        <div class="edit-profile-btns">
       <button type="submit">Save Changes</button>
       </form>
       <button><a href="/caregiver">Back to Dashboard</a></button>
@@ -159,33 +144,44 @@
         </form>
 
     <div id="passwordStatus"></div>
-        
-  </div>
 
-  <script>
-    document.getElementById("profileForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    <br>
 
-      const formData = Object.fromEntries(new FormData(e.target));
+    <script>
+        const form = document.getElementById("elderlyForm");
+        const statusDiv = document.getElementById("status");
 
-      const res = await fetch("/api/caregiver/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            statusDiv.textContent = "Saving...";
 
-      const data = await res.json();
-      const status = document.getElementById("status");
+            const formData = new FormData(form);
+            const body = Object.fromEntries(formData.entries());
 
-      if (data.success) {
-        status.textContent = "Caregiver profile updated successfully";
-        status.className = "success";
-      } else {
-        status.textContent = "Failed to update <%= user.name %> profile";
-        status.className = "error";
-      }
-    });
-    document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+            try {
+                const res = await fetch(
+                    "/api/caregiver/elderly/<%= user.sys_id %>",
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    }
+                );
+
+                const data = await res.json();
+
+                if (data.success) {
+                    statusDiv.textContent = "Updated data for <%= user.name %> successfully";
+                } else {
+                    statusDiv.textContent = "Update failed";
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.textContent = "Server error";
+            }
+        });
+
+        document.getElementById("passwordForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const currentPassword = document.getElementById("currentPassword").value;
@@ -196,7 +192,7 @@
     return alert("New passwords do not match");
   }
 
-  const res = await fetch("/api/caregiver/password", {
+  const res = await fetch("/api/elderly/password/<%= user.sys_id %> ", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currentPassword, newPassword })
@@ -212,9 +208,7 @@
   }
 });
 
-
-
-  </script>
-
+    </script>
 </body>
+
 </html>
