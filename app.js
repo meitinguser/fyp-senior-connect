@@ -1102,7 +1102,6 @@ app.post("/login", (req, res, next) => {
       }
 
       // ================= AIC =================
-<<<<<<< HEAD
       if (user.role === "aic") {
 
         res.cookie("aicId", user.sys_id, {
@@ -1115,9 +1114,6 @@ app.post("/login", (req, res, next) => {
           redirect: "/aic"
         });
       }
-=======
-      // Add code here
->>>>>>> a300419472e20f9aaabb1371949dcaa14e281e1b
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
