@@ -215,7 +215,10 @@
     <p><strong>Phone:</strong> <%= caregiver.contact_phone || 'N/A' %></p>
     <p><strong>Email:</strong> <%= caregiver.contact_email || 'N/A' %></p>
     <p><strong>Address:</strong> <%= caregiver.contact_address || 'N/A' %></p>
-    <button class="edit-profile-btns"><a href="/caregiver/profile">Edit Profile</a></button>
+    <button class="edit-profile-btns" type="button" onclick="location.href='/caregiver/profile'">
+      Edit Profile
+    </button>      
+    
   </section>
   </div>
 
