@@ -61,7 +61,8 @@
       min-width: 250px;
     }
 
-    #filterSelect {
+    #filterSelect,
+    #statusFilter {
       min-width: 200px;
     }
 
@@ -193,6 +194,7 @@
 
     .notification.success {
       background-color: green;
+      color: white;
     }
 
     .notification.error {
@@ -261,7 +263,8 @@
       <tr>
         <th class="sortable" data-column="number" onclick="sortTable('number')">Number</th>
         <th class="sortable" data-column="opened_at" onclick="sortTable('opened_at')">Opened</th>
-        <th>Short Description</th>
+        <th class="sortable" data-column="alert_type" onclick="sortTable('alert_type')">Alert Type</th>
+        <th class="sortable" data-column="elderly_name" onclick="sortTable('elderly_name')">Elderly Name</th>
         <th>Priority</th>
         <th>State</th>
       </tr>
@@ -307,21 +310,50 @@
       "5": "5 - Planning"
     };
 
+    // --- Parse short description into alert type and elderly name ---
+    function parseShortDescription(shortDesc) {
+      // Example: "Missed check-in alert for: Noor Aini Binte Ismail"
+
+      if (!shortDesc || shortDesc === "NA") {
+        return { alertType: "N/A", elderlyName: "N/A" };
+      }
+
+      // Check if it contains "for:"
+      if (shortDesc.includes(" for:")) {
+        const parts = shortDesc.split(" for:");
+        const alertType = parts[0].trim();
+
+        // Extract elderly name, removing any session info in parentheses
+        let elderlyName = parts[1] ? parts[1].trim() : "N/A";
+
+        // Remove session info like "(morning)" or "night" if present
+        elderlyName = elderlyName.replace(/\s*\(.*?\)\s*$/, '').trim();
+
+        return { alertType, elderlyName };
+      }
+
+      // If no "for: " separator, return the whole description as alert type
+      return {alertType: shortDesc, elderlyName: "N/A" };
+    }
+
     // --- Sort table --- 
-    window.sortTable = function(column) {
-      // Toggle sort direction 
-      if (currentSort.column === column) {
-        if (currentSort.direction === 'asc') {
-          currentSort.direction = 'desc';
-        } else if (currentSort.direction === 'desc') {
-          currentSort.direction = 'none';
+    window.sortTable = function(column, preserveDirection = false) {
+      // Toggle sort direction (only if not preserving)
+      if(!preserveDirection) {
+        if (currentSort.column === column) {
+          if (currentSort.direction === 'asc') {
+            currentSort.direction = 'desc';
+          } else if (currentSort.direction === 'desc') {
+            currentSort.direction = 'none';
+          } else {
+            currentSort.direction = 'asc';
+          }
         } else {
+          currentSort.column = column;
           currentSort.direction = 'asc';
         }
-      } else {
-        currentSort.column = column;
-        currentSort.direction = 'asc';
       }
+      // If preserving, currentSort already has the right values
 
       // Update header classes 
       document.querySelectorAll('.sortable').forEach(th => {
@@ -329,38 +361,76 @@
       });
 
       if (currentSort.direction !== 'none') {
-        const header = document.querySelector(`[data-column="${column}"]`);
-        header.classList.add(`sort-${currentSort.direction}`);
+        const header = document.querySelector(`[data-column="${currentSort.column}"]`);
+        if (header) {
+          header.classList.add(`sort-${currentSort.direction}`);
+        }
       }
 
       // Sort the data
       if (currentSort.direction === 'none') {
         // Reset to original order
         incidentData = [...allIncidentData];
-      } else {
+        renderDashboard();
+        updateSummaryCards();
+        return;
+      }
+
         incidentData.sort((a, b) => {
           let valA, valB;
 
-          if (column === 'number') {
+          if (currentSort.column === 'number') {
             // Extract numeric part from incident number (e.g. "INC0010123" -> 10123)
             valA = parseInt(a.number.replace(/[^\d]/g, '')) || 0;
             valB = parseInt(b.number.replace(/[^\d]/g, '')) || 0;
-          } else if (column === 'opened_at') {
+
+            if (currentSort.direction === 'asc') {
+              return valA - valB;
+            } else {
+              return valB - valA;
+            }
+          } else if (currentSort.column === 'opened_at') {
             // Parse dates for comparison
             valA = new Date(a.opened_at).getTime() || 0;
             valB = new Date(b.opened_at).getTime() || 0;
-          } 
 
-          if (currentSort.direction === 'asc') {
-            return valA - valB;
-          } else {
-            return valB - valA;
+            if (currentSort.direction === 'asc') {
+              return valA - valB;
+            } else {
+              return valB - valA;
+            }
+          } else if (currentSort.column === 'alert_type') {
+            // String comparison for alert type
+            const parsedA = parseShortDescription(a.short_description);
+            const parsedB = parseShortDescription(b.short_description);
+            valA = parsedA.alertType.toLowerCase();
+            valB = parsedB.alertType.toLowerCase();
+            
+            if (currentSort.direction === 'asc') {
+              return valA.localeCompare(valB);
+            } else {
+              return valB.localeCompare(valA);
+            }
+          } else if (currentSort.column === 'elderly_name') {
+            // String comparison for elderly name
+            const parsedA = parseShortDescription(a.short_description);
+            const parsedB = parseShortDescription(b.short_description);
+            valA = parsedA.elderlyName.toLowerCase();
+            valB = parsedB.elderlyName.toLowerCase();
+
+            if (currentSort.direction === 'asc') {
+              return valA.localeCompare(valB);
+            } else {
+              return valB.localeCompare(valA);
+            }
           }
-        });
-      }
 
+          return 0;
+        });
+      
         renderDashboard();
-    }
+        updateSummaryCards();
+      }
 
     // --- Show notification ---
     function showNotification(message, type = 'success') {
@@ -448,14 +518,14 @@
           incidentData = eData.incident || [];
           allIncidentData = [...incidentData]; // keep a copy
 
-          // Reset sort when loading new data 
-          currentSort = { column: null, direction: 'none' };
-          document.querySelectorAll('.sortable').forEach(th => {
-            th.classList.remove('sort-asc', 'sort-desc');
-          })
-
-          renderDashboard();
-          updateSummaryCards();
+          // Do not reset when loading new data - perserve current sort. 
+          // Re-apply current sort if one exists.
+          if (currentSort.column && currentSort.direction !== 'none') {
+            sortTable(currentSort.column, true); // true = preserve direction
+          } else {
+            renderDashboard();
+            updateSummaryCards();
+          } 
         } else {
           console.error("Failed to fetch incidents");
         }
@@ -532,7 +602,6 @@
           load();
           return;
         }
-
       }
 
       // Update te dropdown's color class
@@ -552,13 +621,18 @@
 
       if (searchTerm) {
         filteredData = incidentData.filter(incident => {
+          const parsed = parseShortDescription(incident.short_description);
           const desc = (incident.short_description || "").toLowerCase();
           const number = (incident.number || "").toLowerCase();
           const state = (stateMap[incident.state] || "").toLowerCase();
+          const alertType = parsed.alertType.toLowerCase();
+          const elderlyName = parsed.elderlyName.toLowerCase();
 
           return desc.includes(searchTerm) ||
                   number.includes(searchTerm) ||
-                  state.includes(searchTerm);
+                  state.includes(searchTerm) ||
+                  alertType.includes(searchTerm) ||
+                  elderlyName.includes(searchTerm);
         });
       }
 
@@ -579,6 +653,7 @@
 
       // Render rows 
       filteredData.forEach(incident => {
+        const parsed = parseShortDescription(incident.short_description);
         const isMissedAlert = (incident.short_description || "").toLowerCase().includes("missed check-in alert");
         const rowClass = isMissedAlert ? 'missed-alert' : '';
 
@@ -600,7 +675,8 @@
           <tr class="${rowClass}">
             <td>${incident.number}</td>
             <td>${openedDate}</td>
-            <td>${incident.short_description}</td>
+            <td>${parsed.alertType}</td>
+            <td>${parsed.elderlyName}</td>
             <td>${priorityLabel}</td>
             <td>${stateDropdown}</td>
           </tr>
@@ -614,13 +690,17 @@
 
     document.getElementById("filterSelect").addEventListener("change", () => {
       load(); // Reload data with new filter
-    })
+    });
 
-    // --- Auto-refresh every 30secs ---
+    document.getElementById("statusFilter").addEventListener("change", () => {
+      load(); // Reload data with new filter
+    });
+
+    // --- Auto-refresh every 5secs ---
     load().then(() => {
       setInterval(() => {
         load();
-      }, 30000);
+      }, 5000);
     });
   </script>
 </body>

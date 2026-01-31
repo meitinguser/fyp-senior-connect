@@ -579,7 +579,7 @@ function requireAIC(req, res, next) {
   if (req.isAuthenticated() && req.user?.role === "aic") {
     return next();
   }
-  return res.redirect("/aic");
+  return res.redirect("/profile");
 }
 
 app.get("/caregiver", requireCaregiver, async (req, res) => {
@@ -880,7 +880,7 @@ app.put("/api/caregiver/elderly/:sysId", requireCaregiver, async (req, res) => {
 
 
     await axios.put(
-      
+
       `${SN_INSTANCE}/api/now/table/x_1855398_elderl_0_elderly_data/${elderlySysId}`,
       {
         address,
@@ -889,14 +889,14 @@ app.put("/api/caregiver/elderly/:sysId", requireCaregiver, async (req, res) => {
       {
         auth: { username: SN_USER, password: SN_PASS },
         headers: { "Content-Type": "application/json" },
-        
+
       }
-      
+
     );
     res.json({ success: true });
 
   } catch (err) {
-    
+
     console.log("[ELDERLY UPDATE BODY]", req.body);
     console.error("Update elderly failed:", err.response?.data || err.message);
     res.status(500).json({ success: false });
@@ -1215,7 +1215,7 @@ app.post("/login", (req, res, next) => {
           success: true,
           redirect: "/caregiver"
         });
-        
+
       }
 
       // ================= AIC =================
@@ -1231,8 +1231,6 @@ app.post("/login", (req, res, next) => {
           redirect: "/aic"
         });
       }
-
-      // Add code here
 
       // ================= ELDERLY =================
       if (user.role === "elderly") {
@@ -1283,7 +1281,7 @@ app.post("/login", (req, res, next) => {
 // ----------------------------------------
 const shopItems = [
   { id: "neck_pillow", name: "Neck Pillow", cost: 200, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSt50SxJP_r_zYMwLbOljOOGIpRKoehy_ij4Q&s" },
-  { id: "blanket", name: "Blanket", cost: 300, image:  "https://hipvan-images-production.imgix.net/product-images/77436907-0918-45e2-8aff-cec0c9ce341a/Throws---Blankets-by-HipVan--Jaclyn-Luxe-Plush-Throw-Blanket-in-Taupe-_2-sizes_-11.png"},
+  { id: "blanket", name: "Blanket", cost: 300, image: "https://hipvan-images-production.imgix.net/product-images/77436907-0918-45e2-8aff-cec0c9ce341a/Throws---Blankets-by-HipVan--Jaclyn-Luxe-Plush-Throw-Blanket-in-Taupe-_2-sizes_-11.png" },
   { id: "tea_sampler", name: "Tea Sampler", cost: 150, image: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/ces/ces05243/y/86.jpg" },
   { id: "calendar", name: "Large Print Calendar", cost: 100, image: "https://i.ebayimg.com/images/g/P-4AAeSwf-loglQV/s-l1200.jpg" },
   { id: "warm_socks", name: "Warm Socks", cost: 80, image: "https://www.alpacadirect.com/cdn/shop/products/Alpaca-Direct-Alpaca-Extreme-Winter-Boot-Socks-Grey-N20_5000x.jpg" },
