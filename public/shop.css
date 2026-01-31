@@ -169,3 +169,54 @@ border-radius: 14px;
 #showElderlyName {
   justify-content: right;
 }
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.popup {
+  background: white;
+  padding: 24px 28px;
+  border-radius: 12px;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.popup h2 {
+  margin-top: 0;
+  color: #002d62;
+}
+
+.popup p {
+  font-size: 1rem;
+  margin: 15px 0 20px;
+}
+
+.popup button {
+  padding: 10px 20px;
+  border: none;
+  background: #002d62;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.popup button:hover {
+  background: #004aad;
+}
+
+.hidden {
+  display: none;
+}

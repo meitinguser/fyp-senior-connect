@@ -38,17 +38,44 @@
     <% }) %>
   </main>
 
+  <!-- Popup Modal -->
+<div id="popupOverlay" class="popup-overlay hidden">
+  <div class="popup">
+    <h2 id="popupTitle"></h2>
+    <p id="popupMessage"></p>
+    <button id="popupCloseBtn">OK</button>
+  </div>
+</div>
+
+
+
   <footer class="shop-footer">
     <a href="/" class="back-btn">← Back to Game</a>
   </footer>
 
   <script>
-    document.querySelectorAll(".buy-btn").forEach(btn => {
-      btn.addEventListener("click", async e => {
-        const card = e.target.closest(".shop-card");
-        const itemId = card.dataset.id;
-        const itemName = card.dataset.name;
+  const popupOverlay = document.getElementById("popupOverlay");
+  const popupTitle = document.getElementById("popupTitle");
+  const popupMessage = document.getElementById("popupMessage");
+  const popupCloseBtn = document.getElementById("popupCloseBtn");
 
+  function showPopup(title, message) {
+    popupTitle.textContent = title;
+    popupMessage.textContent = message;
+    popupOverlay.classList.remove("hidden");
+  }
+
+  popupCloseBtn.addEventListener("click", () => {
+    popupOverlay.classList.add("hidden");
+  });
+
+  document.querySelectorAll(".buy-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      const card = e.target.closest(".shop-card");
+      const itemId = card.dataset.id;
+      const itemName = card.dataset.name;
+
+      try {
         const res = await fetch("/shop/buy", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -56,19 +83,30 @@
         });
 
         const data = await res.json();
+
         if (data.success) {
           document.getElementById("points").textContent = data.newPoints;
-          alert(`🎉 You bought a ${itemName}!`);
+          showPopup(
+            "Purchase Successful 🎉",
+            `You bought a ${itemName}! Enjoy 😊`
+          );
         } else {
-          alert(data.message || "Not enough points 😢");
+          showPopup(
+            "Purchase Failed ❌",
+            data.message || "Not enough points."
+          );
         }
-      });
+      } catch (err) {
+        console.error(err);
+        showPopup(
+          "Error",
+          "Something went wrong. Please try again."
+        );
+      }
     });
+  });
+</script>
 
-
-    
-
-  </script>
   <script src="/script.js"></script>
 
 </body>
