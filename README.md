@@ -19,12 +19,8 @@ Nodemon restarts the server automatically when files change.\
 <u>Recommended for development:</u>
 > npm install nodemon --save-dev
 
-!!!!!!!!!!!!!!!!!!!!\
-Do not run npm init, the package.json is already included.
-Always run npm install after cloning to recreate node_modules/.
-Use nodemon for development to save time when testing changes.
-
-For Google Translation API: (! Required for app to work !)
+**4. Add Translation API** (Runs before app, ! Required for app to work !)
+For Google Translation API: 
 > cd fyp-senior-connect
 > npm install @google-cloud/translate
 
@@ -32,6 +28,10 @@ copy the path to the json file
 > $env:GOOGLE_APPLICATION_CREDENTIALS="path/to/keys-file.json" 
 
 
+!!!!!!!!!!!!!!!!!!!!\
+Do not run npm init, the package.json is already included.
+Always run npm install after cloning to recreate node_modules/.
+Use nodemon for development to save time when testing changes.
 
 # Update Log
 22/12/2025 Commit [mei ting]
