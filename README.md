@@ -1,5 +1,3 @@
-# !! DO NOT RUN INIT !!
-
 # FYP
 Senior Connect: Building a Support Network for Elderly Living Alone (Process Workflows and Operational Procedures)
 
@@ -26,7 +24,7 @@ Do not run npm init, the package.json is already included.
 Always run npm install after cloning to recreate node_modules/.
 Use nodemon for development to save time when testing changes.
 
-For Google Translation API:
+For Google Translation API: (! Required for app to work !)
 > cd fyp-senior-connect
 > npm install @google-cloud/translate
 
